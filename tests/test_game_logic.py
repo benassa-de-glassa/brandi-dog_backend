@@ -1,0 +1,45 @@
+import sys
+
+sys.path.append('./assets')
+
+from brandi import Brandi
+from user import User
+
+class TestGame():
+    def setup_class(self):
+        self.id1 = User('Bene', 0)
+        self.id2 = User('Lara', 1)
+        self.id3 = User('Thilo', 2)
+        self.id4 = User('Bibi', 3)
+        self.game = Brandi(seed=1)
+
+    def test_start_game(self):
+        assert self.game.game_state == 0
+        assert self.game.players == {}
+
+    def test_player_join(self):
+        self.game.player_join(self.id1)
+        self.game.player_join(self.id2)
+        self.game.player_join(self.id3)
+        self.game.player_join(self.id4)
+
+        assert len(self.game.order) == 4
+        assert self.game.players[1].name == 'Lara'
+
+    def test_change_teams(self):
+        self.game.change_teams([0, 2, 1, 3])
+
+        assert self.game.players[1].name == 'Lara'
+        assert self.game.players[2].name == 'Thilo'
+        assert self.game.order == [0, 2, 1, 3]
+
+    def test_start_game(self):
+        self.game.start_game()
+
+        assert hasattr(self.game.players[0], 'starting_position')
+        assert self.game.players[0].starting_position % 16 == 0
+
+    def test_start_round(self):
+        self.game.start_round()
+
+        assert len(self.game.players[0].hand.cards) == 6
