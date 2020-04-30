@@ -3,9 +3,9 @@ import random
 import logging
 import json
 
-from deck import Deck
-from player import Player
-from field import Field
+from .deck import Deck
+from .player import Player
+from .field import Field
 
 class Brandi():
     """
@@ -133,7 +133,6 @@ class Brandi():
 
         self.round_state = 2
 
-
     """
     EVENTS: 
 
@@ -157,3 +156,30 @@ class Brandi():
         """
         assert player_id == self.order[self.turn_order]
 
+    """
+    GAMESTATE:
+
+    write and read the full game state as JSON
+    """
+    def to_json(self):
+        """
+        Return game state as a JSON object
+
+        """
+        return {
+            'game_state': self.game_state,
+            'round_state': self.round_state,
+            'round_turn': self.round_turn,
+            'deck': self.deck.to_json(),
+            'players': {player.to_json() for player in self.players}, 
+            'order': self.order,
+            'turn_order': self.turn_order,
+            'field': self.field.to_json(),
+        }
+    
+    def from_json(self):
+        """
+        Set game state from a JSON object
+
+        """
+        pass

@@ -1,6 +1,6 @@
 import random
 
-from card import Card
+from .card import Card
 class Deck():
 
     def __init__(self, seed):
@@ -28,3 +28,14 @@ class Deck():
 
     def give_card(self):
         return self.cards.pop(0)
+    
+    """
+    Deck State:
+
+    write and read the state of the deck as JSON
+    """
+    def to_json(self):
+        return [card.uid for card in self.cards]
+
+    def from_json(self):
+        pass

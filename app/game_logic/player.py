@@ -1,5 +1,5 @@
-from hand import Hand
-from marble import Marble
+from .hand import Hand
+from .marble import Marble
 
 class Player():
     """
@@ -20,7 +20,7 @@ class Player():
         self.start = [Marble(self.color ) for _ in range(4)]
         self.goal = [0] * 4
 
-    def set_color(color):
+    def set_color(self, color):
         self.color = color
     
     def set_starting_position(self, pos):
@@ -41,3 +41,11 @@ class Player():
         return a list of available options given a card
         """
         return self.hand.cards[card_id].action_options
+
+    """
+    Player State
+
+
+    """
+    def to_json(self):
+        pass
