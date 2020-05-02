@@ -35,17 +35,17 @@ async def startup_event():
 
 app.include_router(
     games.router,
-    prefix='/v1/games'
+    prefix='/v1'
     )
 
 app.include_router(
     chats.router,
-    prefix='/v1/chats'
+    prefix='/v1'
     )
 
 app.include_router(
     users.router,
-    prefix='/v1/users'
+    prefix='/v1'
     )
 # mount the socket coming from the routers/game.py file
 # sio_asgi_app = socketio.ASGIApp(socketio_server=sio, other_asgi_app=app)
