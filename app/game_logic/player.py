@@ -10,24 +10,29 @@ class Player():
     Player.hand is an instance of the Players Hand
     """
 
-    def __init__(self, name, color=None):
+    def __init__(self, uid,  name, color=None):
+        self.uid = uid
         self.name = name # 
         self.color = color
         self.ready = False # is the player ready to get the game started
         self.hand = Hand()
         
         # 
-        self.start = [Marble(self.color ) for _ in range(4)]
         self.goal = [0] * 4
+        self.marbles = {}
 
     def set_color(self, color):
         self.color = color
     
-    def set_starting_position(self, pos):
+    def set_ready(self):
+        self.ready = True
+    
+    def set_starting_position(self, field):
         """
         set the players starting position
         """
-        self.starting_position = pos * 16
+        self.starting_node = field.get_starting_node(self)
+        self.marbles = {mid: Marble(self.color, self.uid, self.starting_node ) for mid in range(4)} # mid: marble id
     
     def set_card(self, card):
         """
@@ -48,4 +53,7 @@ class Player():
 
     """
     def to_json(self):
-        pass
+        return {
+            'ready': self.ready,
+            'marbles': [marble.to_json(mid) for mid, marble in self.marbles.entries()] 
+        }
