@@ -53,6 +53,17 @@ def get_game_state(game_id: str, player: Player):
         )
     return games[game_id].public_state()
 
+@router.post('/games/{game_id}/join')
+def join_game(game_id: str, player: Player):
+    """
+    join an existing game
+    """
+    if player.uid in games[game_id].players: # ensure no player joins twice
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.name} has already joined.")
+        
+    games[game_id].player_join(player)
+    return games[game_id].public_state()
+
 @router.post('/games/{game_id}/teams')
 def set_teams(game_id: str, player: Player, teams: List[Player]):
     if player.uid not in games[game_id].players :
@@ -70,17 +81,6 @@ def set_teams(game_id: str, player: Player, teams: List[Player]):
 def toggle_player_ready(game_id: str, player: Player):
     if player.uid not in games[game_id].players :
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.uid} not in Game.")
-    return games[game_id].public_state
-
-@router.post('/games/{game_id}/join')
-def join_game(game_id: str, player: Player):
-    """
-    join an existing game
-    """
-    if player.uid in games[game_id].players: # ensure no player joins twice
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.name} has already joined.")
-        
-    games[game_id].player_join(player)
     return games[game_id].public_state()
 
 @router.post('/games/{game_id}/start')
