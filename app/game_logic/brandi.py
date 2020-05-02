@@ -5,8 +5,13 @@ import json
 
 from .deck import Deck
 from .player import Player
-from .field import Field
+from .field import Field, EntryExitNode
+from .marble import Marble
 
+
+NODES_BETWEEN_PLAYERS = 16
+PLAYER_COUNT = 4
+FIELD_SIZE = PLAYER_COUNT * 16
 class Brandi():
     """
         Brandi Dog game instance handling the game logic.
@@ -38,7 +43,7 @@ class Brandi():
         Brandi.order:
             - is a list of player uids to keep track of the order and the teams
                 player at position 0 and at position 2 always play together
-        Brandi.turn_order: keeps track of who's turn it is to play a card and 
+        Brandi.active_player_index: keeps track of who's turn it is to play a card and 
             move a marble
         
         Brandi.round_turn: keeps track of which turn is reached
@@ -56,20 +61,19 @@ class Brandi():
         self.deck = Deck(seed) # initialize a deck instance
         self.players = {} # initialize a new player list
         self.order = [] # list of player uids to keep track of the order
-        self.turn_order = 0 # keep track of whos players turn it is to make a move
+        self.active_player_index = 0 # keep track of whos players turn it is to make a move
 
         self.round_cards = [6, 5, 4, 3, 2] # number of cards dealt at the 
         # beginning of each round
         self.round_turn = 0 # count which turn is reached
 
-        self.field = Field() # field of players
+        self.blocking_positions = list(range(0, FIELD_SIZE, NODES_BETWEEN_PLAYERS))
 
-
-    def player_join(self, user):
+    def player_join(self, player: Player):
         # have a player join the game
-        assert user.uid not in self.players
-        self.players[user.uid] = Player(user.name)
-        self.order.append(user.uid)
+        assert player.uid not in self.players
+        self.players[player.uid] = Player(player.uid, player.name)
+        self.order.append(player.uid)
 
     def change_teams(self, player_ids):
         """
@@ -85,7 +89,6 @@ class Brandi():
         for user_id in player_ids: # assert the user ids in user are in the game
             assert user_id in self.players
         self.order = player_ids
-
 
     def assign_starting_positions(self):
         """
@@ -105,6 +108,8 @@ class Brandi():
         assert all([e is not None for e in self.order]) # check that all players are present
         assert self.game_state == 0
         self.assign_starting_positions()
+        # create a new field instance for the game
+        self.field = Field(self.order) # field of players
         
 
     def start_round(self):
@@ -136,31 +141,110 @@ class Brandi():
     """
     EVENTS: 
 
-    do some action by:
-        - choosing a card
-        - choosing an action from that card 
-        - choosing a marble to perform that action on
     """
-    def event_play_card(self, player_id, card_id):
-        assert player_id in self.players
-        assert card_id in self.players[player_id].hand.cards
+    def event_move_marble(self, player, action):
+        marble = self.players[player.uid].marbles[action.mid]
+        position = marble.curr
+
+        #  get out of the start
+        if action.action == 0: 
+            if position is not None:
+                return { 
+                    'requestValid': False,
+                    'reason': 'Not in the starting position.'
+                }
+            # check that the marble goes to an entry node 
+            # and
+            # check whether the entrynode is blocked
+            elif marble.next.is_blocking(): 
+                return { 
+                    'requestValid': False,
+                    'reason': 'Blocked by a marble.'
+                }
+            # marble is allowed to move
+            else:
+                # check whether there already is a marble
+                if marble.next.has_marble():
+                    # kick the exiting marble
+                    kicked_marble = marble.next.marble.reset_to_starting_position()
+                
+
+                # move the marble to the entry node
+                marble.set_new_position(marble.next)
+                marble.blocking = True # make the marble blocking other marbles
+                
+                """ TODO: add a note on the return statement """
+                return {
+                    'requestValid': True,
+                }
+        # normal actions
+        elif action.action in [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13]:
+            # try to move action.action nodes ahead
+
+            # use pnt variable to check the path along the action of the marble i.e. whether it 
+            # is blocked or it may enter its goal
+            pnt = marble.curr
+            for _ in range(action.action):
+                pnt = pnt.next
+                # check whether a marble is blocking along the way
+                if pnt.is_blocking():
+                    return { 
+                        'requestValid': False,
+                        'reason': 'Blocked by a marble.'
+                    }
+
+            if pnt.has_marble():
+                # kick the marble
+                kicked_marble.next = self.players[pnt.marble.pid].starting_node
+
+            
+            # move the marble to the entry node
+            marble.set_new_position(pnt)
+            # performing any motion with a marble on the field removes the blocking capability
+            marble.blocking = False 
+
+            """ TODO: add a note on the return statement """
+            return {
+                'requestValid': True,
+            }
+        elif action.action == 'switch':
+            assert action.mid_2 is not None # make sure a second marble was submitted
+            assert action.pid_2 is not None # make sure a playerid was submitted
+
+                
 
 
-    def choose_action(self, player_id, card_id):
-        assert self.order[self.turn_order] == player_id
-        return self.players[player_id].choose_action(card_id)
+    """
+    Event Assertions
+    """
 
-    def move_marble(self, action):
-        """
-        move a selected marble
-        """
-        assert player_id == self.order[self.turn_order]
+    def potential_target_position(self, player, action):
+        # find the target position i.e. wheter in ones own goal or on the field
+        start = action.marble_position
+        preliminary_target = (action.marble_position + action.action) % FIELD_SIZE
+        
+        # check if player can enter own goal
+        field_range_representation = set(range(0, FIELD_SIZE)[start : preliminary_target])
+        
+        if player.starting_position in field_range_representation:
+            pass
+
+        
 
     """
     GAMESTATE:
 
     write and read the full game state as JSON
     """
+    def public_state(self):
+        return {
+            'game_state': self.game_state,
+            'round_state': self.round_state,
+            'round_turn': self.round_turn,
+            'order': self.order,
+            'active_player_index': self.active_player_index,
+        }
+
     def to_json(self):
         """
         Return game state as a JSON object
@@ -173,8 +257,8 @@ class Brandi():
             'deck': self.deck.to_json(),
             'players': {player.to_json() for player in self.players}, 
             'order': self.order,
-            'turn_order': self.turn_order,
-            'field': self.field.to_json(),
+            'active_player_index': self.active_player_index,
+            # 'marbles': [player.marbles.to_json() for player in self.players]
         }
     
     def from_json(self):
