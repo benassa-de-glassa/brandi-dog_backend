@@ -20,6 +20,8 @@ router = APIRouter()
 
 games = {}
 
+from app.main import sio
+
 
 @router.get('/games')
 def get_list_of_games():
@@ -94,6 +96,10 @@ def start_game(game_id: str, player: Player):
 
     games[game_id].start_game()
     return games[game_id].public_state()
+
+@router.post('/games/{game_id}/swap')
+def swap_card(game_id: str, player: Player, card: Card):
+    pass
 
 @router.post('/games/{game_id}/action')
 def perform_action(game_id: str, player: Player, action: Action):

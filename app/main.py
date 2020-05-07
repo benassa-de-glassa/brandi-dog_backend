@@ -28,10 +28,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event('startup')
-async def startup_event():
-    # db_connection = r.connect('localhost', 28015).repl()
-    pass
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins='*',
+    logger=False
+)
 
 app.include_router(
     games.router,
