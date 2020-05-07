@@ -6,7 +6,6 @@ from fastapi import FastAPI
 
 import uvicorn
 import socketio
-import rethinkdb as r
 from app.api import games, chats, users
 
 origins = [

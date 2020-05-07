@@ -15,20 +15,26 @@ from app.game_logic.brandi import Brandi
 from app.models.player import Player
 from app.models.action import Action
 from app.models.card import Card
+from app.models.game import GameList
 
 router = APIRouter()
 
 games = {}
 
 
-@router.get('/games')
+@router.get('/games', response_model=GameList)
 def get_list_of_games():
     """
     return a list of game keys
     """
-    return [_ for _ in games]
+    return [
+        {
+            'game_id' : game_key,
+            'players' : [player.to_json() for player in game_instance.players.values()]
+        } 
+        for game_key, game_instance in games.items()]
 
-@router.post('/games')
+@router.post('/games', response_model=GameList)
 def initialize_new_game(player: Player):
     """
     start a new game
@@ -40,7 +46,15 @@ def initialize_new_game(player: Player):
 
     games[game_id] = Brandi()
     games[game_id].player_join(player)
-    return game_id
+    return {
+        'games': [
+            {
+                'game_id' : game_key,
+                'players' : [player.to_json() for player in game_instance.players.values()]
+            } 
+            for game_key, game_instance in games.items()
+        ]
+    }
 
 @router.get('/games/{game_id}')
 def get_game_state(game_id: str, player: Player):
