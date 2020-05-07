@@ -1,5 +1,5 @@
-from .hand import Hand
-from .marble import Marble
+from app.game_logic.hand import Hand
+from app.game_logic.marble import Marble
 
 class Player():
     """
@@ -54,6 +54,8 @@ class Player():
     """
     def to_json(self):
         return {
+            'uid': self.uid,
+            'name': self.name,
             'ready': self.ready,
-            'marbles': [marble.to_json(mid) for mid, marble in self.marbles.entries()] 
+            'marbles': [marble.to_json(mid) for mid, marble in self.marbles.items()] 
         }

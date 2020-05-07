@@ -3,10 +3,10 @@ import random
 import logging
 import json
 
-from .deck import Deck
-from .player import Player
-from .field import Field, EntryExitNode
-from .marble import Marble
+from app.game_logic.deck import Deck
+from app.game_logic.player import Player
+from app.game_logic.field import Field, EntryExitNode
+from app.game_logic.marble import Marble
 
 
 NODES_BETWEEN_PLAYERS = 16
