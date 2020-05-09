@@ -29,6 +29,8 @@ class Deck():
     def give_card(self):
         return self.cards.pop(0)
     
+    def deck_size(self):
+        return len(self.cards)
     """
     Deck State:
 

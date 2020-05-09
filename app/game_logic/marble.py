@@ -6,7 +6,7 @@ class Marble():
     
     """
 
-    def __init__(self, color, pid, starting_node):
+    def __init__(self, color, mid, starting_node):
         self.prev = None
         self.curr = None # start in the starting area
         self.next = starting_node
@@ -15,7 +15,7 @@ class Marble():
         self.starting_position = starting_node
 
         self.color = color
-        self.pid = pid # player id
+        self.mid = mid # marble
         self.blocking = False
         self.can_enter_goal = False
 
@@ -44,6 +44,7 @@ class Marble():
 
 
         return {
+            'mid': self.mid,
             'position': position,
             'color': self.color
         }

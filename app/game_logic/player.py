@@ -14,25 +14,26 @@ class Player():
         self.uid = uid
         self.name = name # 
         self.color = color
-        self.ready = False # is the player ready to get the game started
         self.hand = Hand()
         
         # 
         self.goal = [0] * 4
         self.marbles = {}
 
+
+        # keep track of actions
+        self.may_swap_cards = True
+
     def set_color(self, color):
         self.color = color
     
-    def set_ready(self):
-        self.ready = True
     
-    def set_starting_position(self, field):
+    def set_starting_position(self, field, ind):
         """
         set the players starting position
         """
         self.starting_node = field.get_starting_node(self)
-        self.marbles = {mid: Marble(self.color, self.uid, self.starting_node ) for mid in range(4)} # mid: marble id
+        self.marbles = [Marble(self.color, mid, self.starting_node) for mid in range(ind * 4, 4 * ind + 4)] # mid: marble id
     
     def set_card(self, card):
         """
@@ -52,10 +53,16 @@ class Player():
 
 
     """
+    def private_state(self):
+        return {
+            'uid': self.uid,
+            'name': self.name,
+            'hand': self.hand.to_json() ,
+            'marbles': [marble.to_json() for marble in self.marbles] 
+        }
     def to_json(self):
         return {
             'uid': self.uid,
             'name': self.name,
-            'ready': self.ready,
-            'marbles': [marble.to_json(mid) for mid, marble in self.marbles.items()] 
+            'marbles': [marble.to_json() for marble in self.marbles] 
         }
