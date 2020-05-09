@@ -124,7 +124,7 @@ def start_game(game_id: str, player: Player):
     return games[game_id].public_state()
 
 @router.get('/games/{game_id}/cards')
-def start_game(game_id: str, player: Player):
+def get_cards(game_id: str, player: Player):
     """
     start an existing game
     """
