@@ -28,7 +28,7 @@ class TestGame():
         assert self.game.players[1].name == 'Lara'
 
     def test_change_teams(self):
-        self.game.change_teams([0, 2, 1, 3])
+        self.game.change_teams([self.id1, self.id3, self.id2, self.id4])
 
         assert self.game.players[1].name == 'Lara'
         assert self.game.players[2].name == 'Thilo'
@@ -39,7 +39,3 @@ class TestGame():
 
         assert hasattr(self.game.players[0], 'starting_node')
         assert isinstance(self.game.players[0].starting_node, EntryExitNode)
-    def test_start_round(self):
-        self.game.start_round()
-
-        assert len(self.game.players[0].hand.cards) == 6
