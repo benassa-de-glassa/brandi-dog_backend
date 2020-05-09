@@ -1,9 +1,10 @@
 import sys
 
-sys.path.append('./assets')
 
-from brandi import Brandi
-from user import User
+from app.game_logic.brandi import Brandi
+from app.game_logic.user import User
+
+from app.game_logic.field import EntryExitNode
 
 class TestGame():
     def setup_class(self):
@@ -11,9 +12,9 @@ class TestGame():
         self.id2 = User('Lara', 1)
         self.id3 = User('Thilo', 2)
         self.id4 = User('Bibi', 3)
-        self.game = Brandi(seed=1)
+        self.game = Brandi('ABCD', seed=1)
 
-    def test_start_game(self):
+    def test_pre_start_game(self):
         assert self.game.game_state == 0
         assert self.game.players == {}
 
@@ -36,9 +37,8 @@ class TestGame():
     def test_start_game(self):
         self.game.start_game()
 
-        assert hasattr(self.game.players[0], 'starting_position')
-        assert self.game.players[0].starting_position % 16 == 0
-
+        assert hasattr(self.game.players[0], 'starting_node')
+        assert isinstance(self.game.players[0].starting_node, EntryExitNode)
     def test_start_round(self):
         self.game.start_round()
 
