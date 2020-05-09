@@ -36,7 +36,7 @@ class Brandi():
             - 5: round has finished 
 
 
-        Brandi.Deck is an instance of a Deck object containing shuffled cards.
+        Brandi.deck is an instance of a Deck object containing shuffled cards.
 
         Brandi.players is a list of Player instances
 
@@ -54,20 +54,27 @@ class Brandi():
     """
 
     ### Initialization - Stage 0
-    def __init__(self, seed = None):
+    def __init__(self, game_id, seed = None):
+        self.game_id = game_id
         self.game_state = 0 # start in the initialized state
         self.round_state = 0
 
         self.deck = Deck(seed) # initialize a deck instance
         self.players = {} # initialize a new player list
         self.order = [] # list of player uids to keep track of the order
-        self.active_player_index = 0 # keep track of whos players turn it is to make a move
 
+        self.active_player_index = 0 # keep track of whos players turn it is to make a move
+        
         self.round_cards = [6, 5, 4, 3, 2] # number of cards dealt at the 
         # beginning of each round
         self.round_turn = 0 # count which turn is reached
 
         self.blocking_positions = list(range(0, FIELD_SIZE, NODES_BETWEEN_PLAYERS))
+
+
+        self.card_swap_count = 0 # keep track of how many cards have been swapped so that cards are revealed to the players correctly
+
+
 
     def player_join(self, player: Player):
         # have a player join the game
@@ -75,7 +82,7 @@ class Brandi():
         self.players[player.uid] = Player(player.uid, player.name)
         self.order.append(player.uid)
 
-    def change_teams(self, player_ids):
+    def change_teams(self, playerlist):
         """
         allow for the teams to be chosen by the players before the game has 
         started
@@ -86,17 +93,9 @@ class Brandi():
             together
         """
         assert self.game_state < 2 # assert the game is not yet running
-        for user_id in player_ids: # assert the user ids in user are in the game
-            assert user_id in self.players
-        self.order = player_ids
-
-    def assign_starting_positions(self):
-        """
-        assign starting positions for the game based on self.order
-
-        """
-        for ind, uid in enumerate(self.order):
-            self.players[uid].set_starting_position(ind)
+        for player in playerlist: # assert the user ids in user are in the game
+            assert player.uid in self.players
+        self.order = [player.uid for player in playerlist]
 
     def start_game(self):
         """
@@ -107,9 +106,21 @@ class Brandi():
         """
         assert all([e is not None for e in self.order]) # check that all players are present
         assert self.game_state == 0
-        self.assign_starting_positions()
+        assert len(self.order) == 4
         # create a new field instance for the game
         self.field = Field(self.order) # field of players
+
+        self.assign_starting_positions()
+
+        self.start_round()
+
+    def assign_starting_positions(self):
+        """
+        assign starting positions for the game based on self.order
+
+        """
+        for ind, player_uid in enumerate(self.order):
+            self.players[player_uid].set_starting_position(self.field, ind)
         
 
     def start_round(self):
@@ -138,8 +149,32 @@ class Brandi():
 
         self.round_state = 2
 
+    def swap_card(self, player, card):
+        assert self.round_state == 2
+        assert self.players[player.uid].may_swap_cards
+        team_member = self.order[(self.order.index(player.uid) + PLAYER_COUNT //2) % PLAYER_COUNT//2] # find the teammember
+        
+
+        self.players[player.uid].hand.play_card(card)
+        self.players[team_member].hand.set_card(card)
+
+        self.card_swap_count += 1
+
+        # make sure the players only swap one card
+        self.players[player.uid].may_swap_cards = False
+        if self.card_swap_count % PLAYER_COUNT == 0: # when all players have sent their card to swap
+            """
+            TODO: send websocket with game state
+            """
+            self.round_state +=1
+
+            # reset swapping ability for next round
+            for uid in self.order:
+                self.players[uid].may_swap_cards = True
+        return self.players[player.uid].private_state()
+        
     """
-    EVENTS: 
+    Game play events: 
 
     """
     def event_move_marble(self, player, action):
@@ -151,7 +186,7 @@ class Brandi():
             if position is not None:
                 return { 
                     'requestValid': False,
-                    'reason': 'Not in the starting position.'
+                    'note': 'Not in the starting position.'
                 }
             # check that the marble goes to an entry node 
             # and
@@ -159,14 +194,14 @@ class Brandi():
             elif marble.next.is_blocking(): 
                 return { 
                     'requestValid': False,
-                    'reason': 'Blocked by a marble.'
+                    'note': 'Blocked by a marble.'
                 }
             # marble is allowed to move
             else:
                 # check whether there already is a marble
                 if marble.next.has_marble():
                     # kick the exiting marble
-                    kicked_marble = marble.next.marble.reset_to_starting_position()
+                    marble.next.marble.reset_to_starting_position()
                 
 
                 # move the marble to the entry node
@@ -176,6 +211,7 @@ class Brandi():
                 """ TODO: add a note on the return statement """
                 return {
                     'requestValid': True,
+                    'note': f'Marble {action.mid} moved to {marble.curr.position}.' 
                 }
         # normal actions
         elif action.action in [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13]:
@@ -190,13 +226,13 @@ class Brandi():
                 if pnt.is_blocking():
                     return { 
                         'requestValid': False,
-                        'reason': 'Blocked by a marble.'
+                        'note': f'Blocked by a marble at position {pnt.position}.'
                     }
 
             if pnt.has_marble():
                 # kick the marble
-                kicked_marble.next = self.players[pnt.marble.pid].starting_node
-
+                # kicked_marble.next = self.players[pnt.marble.pid].starting_node
+                pnt.marble.reset_to_starting_position()
             
             # move the marble to the entry node
             marble.set_new_position(pnt)
@@ -206,6 +242,7 @@ class Brandi():
             """ TODO: add a note on the return statement """
             return {
                 'requestValid': True,
+                'note': f'Marble {action.mid} moved to {marble.curr.position}.' 
             }
         elif action.action == 'switch':
             assert action.mid_2 is not None # make sure a second marble was submitted
@@ -236,13 +273,19 @@ class Brandi():
 
     write and read the full game state as JSON
     """
+    def get_cards(self, player):
+        return self.players[player.uid].private_state()
+        
+
     def public_state(self):
         return {
+            'game_id': self.game_id,
             'game_state': self.game_state,
             'round_state': self.round_state,
             'round_turn': self.round_turn,
             'order': self.order,
             'active_player_index': self.active_player_index,
+            'players': [self.players[uid].to_json() for uid in self.order]
         }
 
     def to_json(self):
@@ -251,14 +294,14 @@ class Brandi():
 
         """
         return {
+            'game_id': self.game_id,
             'game_state': self.game_state,
             'round_state': self.round_state,
             'round_turn': self.round_turn,
             'deck': self.deck.to_json(),
-            'players': {player.to_json() for player in self.players}, 
+            'players': [player.to_json() for player in self.players], 
             'order': self.order,
             'active_player_index': self.active_player_index,
-            # 'marbles': [player.marbles.to_json() for player in self.players]
         }
     
     def from_json(self):
