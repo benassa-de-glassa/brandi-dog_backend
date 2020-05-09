@@ -28,7 +28,7 @@ class GameNode(Node):
 
 class EntryExitNode(GameNode):
     def __init__(self, uid, position):
-        super().__init__(self, position)
+        super().__init__(position)
 
         self.entry_exit_for_player = uid
         self.exit = [None, None, None ,None]
