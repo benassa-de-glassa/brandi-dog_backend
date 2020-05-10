@@ -302,3 +302,60 @@ class TestGame:
             }
         ]
         """
+
+        res = client.post(f'v1/games/{self.game_ids[0]}/action',
+            json={
+                "player": self.players[0],
+                "action": {
+                    "card": {
+                        'uid': 84, 
+                        'value': '4', 
+                        'color': 'hearts', 
+                        'actions': [-4, 4]
+                    }, 
+                    "action": -4,
+                    "mid": 0 
+                }
+            }
+        )
+
+        assert res.status_code == 200
+        assert res.json()["players"][0]["marbles"][0]["position"] == 60
+
+        res = client.post(f'v1/games/{self.game_ids[0]}/action',
+            json={
+                "player": self.players[1],
+                "action": {
+                    "card": {
+                        'uid': 92, 
+                        'value': '3', 
+                        'color': 'hearts', 
+                        'actions': [3]
+                    }, 
+                    "action": 3,
+                    "mid": 4
+                }
+            }
+        )
+
+        assert res.status_code == 200
+        assert res.json()["players"][1]["marbles"][0]["position"] == 19
+
+        res = client.post(f'v1/games/{self.game_ids[0]}/action',
+            json={
+                "player": self.players[3],
+                "action": {
+                    "card": {
+                        'uid': 16, 
+                        'value': 'Q', 
+                        'color': 'clubs', 
+                        'actions': [12]
+                    },
+                    "action": 12,
+                    "mid": 12
+                }
+            }
+        )
+
+        assert res.json()["players"][3]["marbles"][0]["position"] == 60
+        assert res.json()["players"][0]["marbles"][0]["position"] == -1
