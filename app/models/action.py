@@ -5,7 +5,7 @@ from .card import Card
 
 class Action(BaseModel):
     card: Card
-    action: Union[str, int]
+    action: Union[int, str]
     mid: int
     mid_2: Optional[int]
     pid_2: Optional[str]
