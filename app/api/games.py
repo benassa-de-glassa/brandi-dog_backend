@@ -197,4 +197,5 @@ def perform_action(game_id: str, player: Player, action: Action):
 
     if res['requestValid']:
         sio_emit_game_state(game_id)
+        sio_emit_player_state(game_id, player.uid)
     return games[game_id].public_state()
