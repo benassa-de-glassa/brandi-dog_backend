@@ -134,6 +134,10 @@ class Brandi():
         self.round_state = 1
 
         self.deal_cards()
+
+        # reset the has folded attribute
+        for uid in self.order:
+            self.players[uid].has_folded = False            
         
 
     def deal_cards(self):
@@ -152,11 +156,10 @@ class Brandi():
     def swap_card(self, player, card):
         assert self.round_state == 2
         assert self.players[player.uid].may_swap_cards
-        team_member = self.order[(self.order.index(player.uid) + PLAYER_COUNT //2) % PLAYER_COUNT//2] # find the teammember
-        
+        team_member = self.order[(self.order.index(player.uid) + PLAYER_COUNT // 2) % PLAYER_COUNT] # find the teammember
 
-        self.players[player.uid].hand.play_card(card)
-        self.players[team_member].hand.set_card(card)
+        swapped_card = self.players[player.uid].hand.play_card(card)
+        self.players[team_member].hand.set_card(swapped_card)
 
         self.card_swap_count += 1
 
@@ -171,13 +174,40 @@ class Brandi():
             # reset swapping ability for next round
             for uid in self.order:
                 self.players[uid].may_swap_cards = True
-        return self.players[player.uid].private_state()
-        
+        return None
+    
+    def increment_active_player_index(self):
+        """
+        increment the active player index until a player is found who has not yet folded
+        """
+        self.active_player_index = (self.active_player_index + 1) % PLAYER_COUNT
+
+        while self.players[self.order[self.active_player_index]].has_finished():
+            self.active_player_index = (self.active_player_index + 1) % PLAYER_COUNT
+
+
     """
     Game play events: 
 
     """
+    def event_player_fold(self, player):
+        """
+        
+        """
+        self.players[player.uid].fold()
+        self.increment_active_player_index()
+        return {
+            'requestValid': True,
+            'note': f'Player {player.name} has folded for this round.' 
+        }
+
     def event_move_marble(self, player, action):
+
+        if player.uid != self.order[self.active_player_index]:
+            return {
+                'requestValid': False,
+                'note': f'It is not player {player.name}s turn.'
+            }
         marble = self.players[player.uid].marbles[action.mid]
         position = marble.curr
 
@@ -208,7 +238,8 @@ class Brandi():
                 marble.set_new_position(marble.next)
                 marble.blocking = True # make the marble blocking other marbles
                 
-                """ TODO: add a note on the return statement """
+                self.increment_active_player_index()
+
                 return {
                     'requestValid': True,
                     'note': f'Marble {action.mid} moved to {marble.curr.position}.' 
@@ -239,7 +270,8 @@ class Brandi():
             # performing any motion with a marble on the field removes the blocking capability
             marble.blocking = False 
 
-            """ TODO: add a note on the return statement """
+            self.increment_active_player_index()
+
             return {
                 'requestValid': True,
                 'note': f'Marble {action.mid} moved to {marble.curr.position}.' 
