@@ -78,7 +78,11 @@ class Brandi():
 
     def player_join(self, player: Player):
         # have a player join the game
-        assert player.uid not in self.players
+        if player.uid in self.players:
+            return { 
+                    'requestValid': False,
+                    'note': 'Player has already joined the game.'
+                }
         self.players[player.uid] = Player(player.uid, player.name)
         self.order.append(player.uid)
 
@@ -92,9 +96,18 @@ class Brandi():
         player_ids (list): List of player_ids, players with index 0 and 2 play 
             together
         """
-        assert self.game_state < 2 # assert the game is not yet running
+        if not (self.game_state < 2): # assert the game is not yet running
+            return { 
+                    'requestValid': False,
+                    'note': 'Teams can not be switched. The game has already started'
+                }
         for player in playerlist: # assert the user ids in user are in the game
-            assert player.uid in self.players
+            
+            if not (player.uid in self.players):
+                return { 
+                    'requestValid': False,
+                    'note': 'Teams can not be switched. The player ids do not match.'
+                }
         self.order = [player.uid for player in playerlist]
 
     def start_game(self):
