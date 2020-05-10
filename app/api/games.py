@@ -35,11 +35,21 @@ def sio_emit_game_state(game_id):
         room=game_id
     )
 
+def sio_emit_player_state(game_id, player_id):
+    sio.emit(
+        'player-state',
+        {
+            "data": games[game_id].players[player_id].private_state()
+        },
+        room=player_id
+    )
+
 @sio.on('join-game')
 def join_websocket(sid, data):
     if data["game_id"] not in games:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="The game you attempt to join does not exist.")
     sio.enter_room(sid, data["game_id"])
+    sio.enter_room(sid, data["player"]["uid"])
     sio.emit('success', 
         {
             "response": f"successfully joined game {data['game_id']}"
@@ -121,6 +131,8 @@ def start_game(game_id: str, player: Player):
 
 
     games[game_id].start_game()
+    if res['requestValid']:
+        sio_emit_game_state(game_id)
     return games[game_id].public_state()
 
 @router.get('/games/{game_id}/cards')
@@ -146,8 +158,11 @@ def swap_card(game_id: str, player: Player, card: CardBase):
     if card.uid not in games[game_id].players[player.uid].hand.cards:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Card {card.uid} not in {player.name}'s hand.")
     
-    games[game_id].swap_card(player, card)
-    return 
+    res = games[game_id].swap_card(player, card)
+    if res["taskFinished"]:
+        for uid in games[game_id].order:
+            sio_emit_player_state(game_id, uid)
+    return res # do not return cards at this point as the player is not allowed to view them yet
 
 @router.post('/games/{game_id}/fold')
 def fold_round(game_id: str, player: Player):
@@ -158,6 +173,9 @@ def fold_round(game_id: str, player: Player):
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.uid} not in Game.")
 
     games[game_id].event_player_fold(player)
+    
+    if res['requestValid']:
+        sio_emit_game_state(game_id)
     return games[game_id].get_cards(player)
 
     
@@ -175,5 +193,8 @@ def perform_action(game_id: str, player: Player, action: Action):
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Card {action.card.uid} not in {player.name}'s hand.")
 
 
-    games[game_id].event_move_marble(player, action)
+    res = games[game_id].event_move_marble(player, action)
+
+    if res['requestValid']:
+        sio_emit_game_state(game_id)
     return games[game_id].public_state()
