@@ -4,10 +4,12 @@ class Node(object):
     def __init__(self):
         self.next = None
         self.prev = None
+        self.curr = self
     
 class GameNode(Node):
     def __init__(self, position):
-        self.position = None
+        super().__init__()
+        self.position = position
         self.marble = None
 
     def set_marble(self, marble):
@@ -18,7 +20,6 @@ class GameNode(Node):
 
     def is_blocking(self):
         """
-        
         A game node cannot be blocking 
         This is a convinience function
         """
