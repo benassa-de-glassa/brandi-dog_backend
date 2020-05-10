@@ -210,7 +210,11 @@ class Brandi():
             }
         marble = self.players[player.uid].marbles[action.mid]
         position = marble.curr
-
+        if action.action not in self.players[player.uid].hand.cards[action.card.uid].action_options:
+            return { 
+                    'requestValid': False,
+                    'note': 'Desired action does not match the card.'
+                }
         #  get out of the start
         if action.action == 0: 
             if position is not None:
