@@ -135,7 +135,7 @@ def get_cards(game_id: str, player: Player):
     return games[game_id].get_cards(player)
     
 
-@router.post('/games/{game_id}/swap_cards', response_model=PlayerPrivate)
+@router.post('/games/{game_id}/swap_cards')
 def swap_card(game_id: str, player: Player, card: CardBase):
     """
     make the card swap before starting the round
@@ -145,9 +145,23 @@ def swap_card(game_id: str, player: Player, card: CardBase):
 
     if card.uid not in games[game_id].players[player.uid].hand.cards:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Card {card.uid} not in {player.name}'s hand.")
-
-    return games[game_id].swap_card(player, card)
     
+    games[game_id].swap_card(player, card)
+    return 
+
+@router.post('/games/{game_id}/fold')
+def fold_round(game_id: str, player: Player):
+    """
+    make the card swap before starting the round
+    """
+    if player.uid not in games[game_id].players:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.uid} not in Game.")
+
+    games[game_id].event_player_fold(player)
+    return games[game_id].get_cards(player)
+
+    
+
 @router.post('/games/{game_id}/action')
 def perform_action(game_id: str, player: Player, action: Action):
     """
@@ -161,5 +175,5 @@ def perform_action(game_id: str, player: Player, action: Action):
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Card {action.card.uid} not in {player.name}'s hand.")
 
 
-    games[game_id].event_play_card(player, action)
+    games[game_id].event_move_marble(player, action)
     return games[game_id].public_state()
