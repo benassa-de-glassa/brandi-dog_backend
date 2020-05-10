@@ -50,7 +50,7 @@ class Card():
         if self.value == '2':
             self.action_options = [2]
         if self.value == 'Jo':
-            self.action_options = [list(range( 0, 14)), 'switch', -4]
+            self.action_options = [*list(range( 0, 14)), 'switch', -4]
 
         
 
