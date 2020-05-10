@@ -23,6 +23,7 @@ class Player():
 
         # keep track of actions
         self.may_swap_cards = True
+        self.has_folded = False
 
     def set_color(self, color):
         self.color = color
@@ -33,7 +34,7 @@ class Player():
         set the players starting position
         """
         self.starting_node = field.get_starting_node(self)
-        self.marbles = [Marble(self.color, mid, self.starting_node) for mid in range(ind * 4, 4 * ind + 4)] # mid: marble id
+        self.marbles = {mid: Marble(self.color, mid, self.starting_node) for mid in range(ind * 4, 4 * ind + 4)} # mid: marble id
     
     def set_card(self, card):
         """
@@ -48,6 +49,14 @@ class Player():
         """
         return self.hand.cards[card_id].action_options
 
+    def fold(self):
+        self.hand.fold()
+        self.has_folded = True
+
+    def has_finished(self):
+        return self.has_folded or self.hand.cards == {}
+    
+
     """
     Player State
 
@@ -58,11 +67,11 @@ class Player():
             'uid': self.uid,
             'name': self.name,
             'hand': self.hand.to_json() ,
-            'marbles': [marble.to_json() for marble in self.marbles] 
+            'marbles': [marble.to_json() for marble in self.marbles.values()] 
         }
     def to_json(self):
         return {
             'uid': self.uid,
             'name': self.name,
-            'marbles': [marble.to_json() for marble in self.marbles] 
+            'marbles': [marble.to_json() for marble in self.marbles.values()] 
         }
