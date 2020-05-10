@@ -104,15 +104,33 @@ class Brandi():
             - players are assigned their starting position based on self.order
             - first round is started
         """
-        assert all([e is not None for e in self.order]) # check that all players are present
-        assert self.game_state == 0
-        assert len(self.order) == 4
+        if not all([e is not None for e in self.order]): # check that all players are present
+            return { 
+                    'requestValid': False,
+                    'note': 'Not all players are present.'
+                }
+        if not self.game_state == 0:
+            return { 
+                    'requestValid': False,
+                    'note': 'Game has already started.'
+                }
+
+        if not len(self.order) == PLAYER_COUNT:
+            return { 
+                    'requestValid': False,
+                    'note': 'Not all players are present.'
+                }
         # create a new field instance for the game
         self.field = Field(self.order) # field of players
 
         self.assign_starting_positions()
 
         self.start_round()
+        return { 
+                    'requestValid': True,
+                    'note': 'Game is started.'
+                }
+        
 
     def assign_starting_positions(self):
         """
@@ -129,7 +147,11 @@ class Brandi():
             - check and set the correct game state
             - deal cards
         """
-        assert self.round_state in [0, 5]
+        if not self.round_state in [0, 5]:
+            return { 
+                    'requestValid': False,
+                    'note': 'The round has already started.'
+                }
         self.game_state = 2
         self.round_state = 1
 
@@ -137,7 +159,13 @@ class Brandi():
 
         # reset the has folded attribute
         for uid in self.order:
-            self.players[uid].has_folded = False            
+            self.players[uid].has_folded = False        
+
+        return { 
+                    'requestValid': True,
+                    'note': 'Round is started.'
+                }
+            
         
 
     def deal_cards(self):
@@ -166,15 +194,22 @@ class Brandi():
         # make sure the players only swap one card
         self.players[player.uid].may_swap_cards = False
         if self.card_swap_count % PLAYER_COUNT == 0: # when all players have sent their card to swap
-            """
-            TODO: send websocket with game state
-            """
+                
             self.round_state +=1
 
             # reset swapping ability for next round
             for uid in self.order:
                 self.players[uid].may_swap_cards = True
-        return None
+            return { 
+                    'requestValid': True,
+                    'taskFinished': True, 
+                    'note': 'Card has been swapped.'
+                }
+        return { 
+                    'requestValid': True,
+                    'taskFinished': False
+                    'note': 'Card has been swapped.'
+                }
     
     def increment_active_player_index(self):
         """
