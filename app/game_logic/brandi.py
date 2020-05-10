@@ -207,7 +207,7 @@ class Brandi():
                 }
         return { 
                     'requestValid': True,
-                    'taskFinished': False
+                    'taskFinished': False,
                     'note': 'Card has been swapped.'
                 }
     

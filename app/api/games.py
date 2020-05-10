@@ -130,7 +130,7 @@ def start_game(game_id: str, player: Player):
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.uid} not in Game.")
 
 
-    games[game_id].start_game()
+    res = games[game_id].start_game()
     if res['requestValid']:
         sio_emit_game_state(game_id)
     return games[game_id].public_state()
@@ -172,7 +172,7 @@ def fold_round(game_id: str, player: Player):
     if player.uid not in games[game_id].players:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.uid} not in Game.")
 
-    games[game_id].event_player_fold(player)
+    res = games[game_id].event_player_fold(player)
     
     if res['requestValid']:
         sio_emit_game_state(game_id)
