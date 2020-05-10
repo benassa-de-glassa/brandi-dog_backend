@@ -17,11 +17,13 @@ from app.models.action import Action
 from app.models.card import Card, CardBase
 from app.models.game import GamePublic
 
+# import the socket instance
+from app.api.socket import sio
+
 router = APIRouter()
 
 games = {}
 
-from app.main import sio
 
 """
 socket events
