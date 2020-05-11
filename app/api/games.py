@@ -28,36 +28,33 @@ games = {}
 """
 socket events
 """
-def sio_emit_game_state(game_id):
-    sio.emit(
+async def sio_emit_game_state(game_id):
+    await sio.emit(
         'game-state',
-        {
-            "data": games[game_id].public_state()
-        },
+        games[game_id].public_state(),
         room=game_id
     )
 
-def sio_emit_player_state(game_id, player_id):
-    sio.emit(
+async def sio_emit_player_state(game_id, player_id):
+    await sio.emit(
         'player-state',
-        {
-            "data": games[game_id].players[player_id].private_state()
-        },
+        games[game_id].players[player_id].private_state(),
         room=player_id
     )
 
 @sio.on('join-game')
-def join_websocket(sid, data):
+async def join_websocket(sid, data):
     if data["game_id"] not in games:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="The game you attempt to join does not exist.")
+    
     sio.enter_room(sid, data["game_id"])
     sio.enter_room(sid, data["player"]["uid"])
-    sio.emit('success', 
+    await sio.emit('join-game-success', 
         {
             "response": f"successfully joined game {data['game_id']}"
         }, 
-        room=sid)
-
+        room=data["player"]["uid"])
+    await sio_emit_game_state(data["game_id"])
 
 """
 routing
@@ -81,7 +78,7 @@ def initialize_new_game(player: Player, game_name: str = Body(...), seed: int=No
         game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4)) # generate new game ids until a new id is found
 
     games[game_id] = Brandi(game_id, game_name=game_name, host=player, seed=seed)
-    games[game_id].player_join(player)
+    # games[game_id].player_join(player)
     return games[game_id].public_state()
 
 @router.get('/games/{game_id}', response_model=GamePublic)
@@ -97,7 +94,7 @@ def get_game_state(game_id: str, player: Player):
     return games[game_id].public_state()
 
 @router.post('/games/{game_id}/join', response_model=GamePublic)
-def join_game(game_id: str, player: Player):
+async def join_game(game_id: str, player: Player):
     """
     join an existing game
     """
@@ -109,6 +106,8 @@ def join_game(game_id: str, player: Player):
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Four player have already joined this game, there is no more room.")
 
     games[game_id].player_join(player)
+    await sio_emit_game_state(game_id)
+
     return games[game_id].public_state()
 
 @router.post('/games/{game_id}/teams', response_model=GamePublic)
@@ -118,9 +117,6 @@ def set_teams(game_id: str, player: Player, teams: List[Player]):
     if not all([_p.uid in games[game_id].players for _p in teams]): # check validity of teams
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Players not in Game.")
         
-    # if not len(frozenset(teams)) == len(teams): # assert no doule players
-    #     raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="Not all players selected in request.")
-
     games[game_id].change_teams(teams)
     return games[game_id].public_state()
 
