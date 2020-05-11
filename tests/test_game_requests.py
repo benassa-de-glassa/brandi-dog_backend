@@ -29,7 +29,11 @@ class TestGame:
 
     def test_request_initialize_game(self):
         res = client.post('v1/games?seed=1',
-            json=self.players[0]
+
+            json={
+                'player': self.players[0],
+                'game_name': 'test_game'
+                }
         )
 
         assert res.status_code == 200
@@ -37,8 +41,13 @@ class TestGame:
         self.game_ids += [res.json() ["game_id"]]
 
         res = client.post('v1/games',
-            json=self.players[1]
+            json={
+                'player': self.players[1],
+                'game_name': 'test_game_2'
+            }
         )
+        assert res.status_code == 200
+        assert res.json()["players"][0]["name"] == "Lara"
 
     def test_request_get_game_list(self):
         res = client.get('v1/games')
