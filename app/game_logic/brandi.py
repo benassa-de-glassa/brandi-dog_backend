@@ -54,8 +54,10 @@ class Brandi():
     """
 
     ### Initialization - Stage 0
-    def __init__(self, game_id, seed = None):
+    def __init__(self, game_id, seed = None, game_name=None, host=None):
         self.game_id = game_id
+        self.game_name = game_name
+        self.host = host
         self.game_state = 0 # start in the initialized state
         self.round_state = 0
 
@@ -74,13 +76,11 @@ class Brandi():
 
         self.card_swap_count = 0 # keep track of how many cards have been swapped so that cards are revealed to the players correctly
 
-
-
     def player_join(self, player: Player):
         # have a player join the game
-        assert player.uid not in self.players
-        self.players[player.uid] = Player(player.uid, player.name)
-        self.order.append(player.uid)
+        assert player['uid'] not in self.players
+        self.players[player['uid']] = Player(player['uid'], player['name'])
+        self.order.append(player['uid'])
 
     def change_teams(self, playerlist):
         """
@@ -94,8 +94,8 @@ class Brandi():
         """
         assert self.game_state < 2 # assert the game is not yet running
         for player in playerlist: # assert the user ids in user are in the game
-            assert player.uid in self.players
-        self.order = [player.uid for player in playerlist]
+            assert player['uid'] in self.players
+        self.order = [player['uid'] for player in playerlist]
 
     def start_game(self):
         """
@@ -192,7 +192,7 @@ class Brandi():
         self.card_swap_count += 1
 
         # make sure the players only swap one card
-        self.players[player.uid].may_swap_cards = False
+        self.players[player['uid']].may_swap_cards = False
         if self.card_swap_count % PLAYER_COUNT == 0: # when all players have sent their card to swap
                 
             self.round_state +=1
@@ -203,7 +203,7 @@ class Brandi():
             return { 
                     'requestValid': True,
                     'taskFinished': True, 
-                    'note': 'Card has been swapped.'
+                    'note': 'Cards have been swapped.'
                 }
         return { 
                     'requestValid': True,
@@ -376,12 +376,14 @@ class Brandi():
     write and read the full game state as JSON
     """
     def get_cards(self, player):
-        return self.players[player.uid].private_state()
+        return self.players[player['uid']].private_state()
         
 
     def public_state(self):
         return {
             'game_id': self.game_id,
+            'game_name': self.game_name,
+            'host': self.host,
             'game_state': self.game_state,
             'round_state': self.round_state,
             'round_turn': self.round_turn,
@@ -397,6 +399,7 @@ class Brandi():
         """
         return {
             'game_id': self.game_id,
+            'game_name': self.game_name,
             'game_state': self.game_state,
             'round_state': self.round_state,
             'round_turn': self.round_turn,

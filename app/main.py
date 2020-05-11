@@ -7,6 +7,9 @@ from fastapi import FastAPI
 import uvicorn
 import socketio
 
+from app.api.socket import sio
+from app.api import games, chats, users
+
 origins = [
     "*",
 ]
@@ -26,15 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-sio = socketio.AsyncServer(
-    async_mode='asgi',
-    cors_allowed_origins='*',
-    logger=False
-)
-
-# import needs to be down here so that there is the circular import is handled correctly
-from app.api import games, chats, users
-
 app.include_router(
     games.router,
     prefix='/v1'
@@ -49,13 +43,9 @@ app.include_router(
     users.router,
     prefix='/v1'
     )
-# mount the socket coming from the routers/game.py file
-sio_asgi_app = socketio.ASGIApp(socketio_server=sio, other_asgi_app=app)
 
-# app.add_route("/games", route=sio_asgi_app)
-app.add_websocket_route("/games", sio_asgi_app)
-
-
+# create socket.io app
+sio_app = socketio.ASGIApp(socketio_server=sio, other_asgi_app=app)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000 , debug=True)
+    uvicorn.run(sio_app, host="0.0.0.0", port=8000 , debug=True)

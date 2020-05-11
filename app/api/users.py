@@ -1,9 +1,9 @@
 import random
 import string
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter #, Path
 
-from pydantic import BaseModel
+# from pydantic import BaseModel
 
 from app.models.player import Player, PlayerBase
 

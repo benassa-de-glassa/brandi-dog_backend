@@ -1,7 +1,7 @@
 import random
 import string
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Body
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 from starlette.status import HTTP_400_BAD_REQUEST
@@ -17,11 +17,13 @@ from app.models.action import Action
 from app.models.card import Card, CardBase
 from app.models.game import GamePublic
 
+# import the socket instance
+from app.api.socket import sio
+
 router = APIRouter()
 
 games = {}
 
-from app.main import sio
 
 """
 socket events
@@ -68,16 +70,20 @@ def get_list_of_games():
     return [game_instance.public_state() for game_instance in games.values()]
 
 @router.post('/games', response_model=GamePublic)
-def initialize_new_game( player: Player, seed: int=None):
+# Body(...) is needed to not have game_name recognized as a query parameter
+# ... is the ellipsis and I have no clue why they decided to (ab)use this notation
+def initialize_new_game(player: Player, game_name: str = Body(...), seed: int=None): #player: Player, game_name: str, seed: int=None):
     """
     start a new game
     """
+    # need to convert to dict to make it usable
+    player = player.dict()
 
     game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4))
     while game_id in games:
         game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4)) # generate new game ids until a new id is found
 
-    games[game_id] = Brandi(game_id, seed=seed)
+    games[game_id] = Brandi(game_id, game_name=game_name, host=player, seed=seed)
     games[game_id].player_join(player)
     return games[game_id].public_state()
 
