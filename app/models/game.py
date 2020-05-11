@@ -14,7 +14,7 @@ class GamePublic(GameBase):
     round_turn: int
     order: List
     active_player_index: int
-    players: List[Player]
+    players: Dict[str, Player]
     # thilo branch
     host: Player
     game_name: str
