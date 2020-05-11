@@ -78,9 +78,9 @@ class Brandi():
 
     def player_join(self, player: Player):
         # have a player join the game
-        assert player['uid'] not in self.players
-        self.players[player['uid']] = Player(player['uid'], player['name'])
-        self.order.append(player['uid'])
+        assert player.uid not in self.players
+        self.players[player.uid] = Player(player.uid, player.name)
+        self.order.append(player.uid)
 
     def change_teams(self, playerlist):
         """
@@ -94,8 +94,8 @@ class Brandi():
         """
         assert self.game_state < 2 # assert the game is not yet running
         for player in playerlist: # assert the user ids in user are in the game
-            assert player['uid'] in self.players
-        self.order = [player['uid'] for player in playerlist]
+            assert player.uid in self.players
+        self.order = [player.uid for player in playerlist]
 
     def start_game(self):
         """
@@ -192,7 +192,7 @@ class Brandi():
         self.card_swap_count += 1
 
         # make sure the players only swap one card
-        self.players[player['uid']].may_swap_cards = False
+        self.players[player.uid].may_swap_cards = False
         if self.card_swap_count % PLAYER_COUNT == 0: # when all players have sent their card to swap
                 
             self.round_state +=1
@@ -376,7 +376,7 @@ class Brandi():
     write and read the full game state as JSON
     """
     def get_cards(self, player):
-        return self.players[player['uid']].private_state()
+        return self.players[player.uid].private_state()
         
 
     def public_state(self):
