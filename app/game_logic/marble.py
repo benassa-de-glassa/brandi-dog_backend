@@ -13,8 +13,8 @@ class Marble():
 
         # store the starting position separately for a reset
         self.starting_position = starting_node
-
-        self.color = color
+        colors = ['red', 'yellow', 'green', 'blue']
+        self.color = colors[mid//4]
         self.mid = mid # marble
         self.blocking = False
         self.can_enter_goal = False
@@ -38,7 +38,7 @@ class Marble():
 
     def to_json(self):
         if self.curr is None: # at start
-            position = -1
+            position = -self.mid -1
         else: 
             position = self.curr.position
 
