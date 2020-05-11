@@ -76,7 +76,6 @@ def initialize_new_game(player: Player, game_name: str = Body(...), seed: int=No
     """
     start a new game
     """
-
     game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4))
     while game_id in games:
         game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4)) # generate new game ids until a new id is found

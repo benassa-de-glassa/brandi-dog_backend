@@ -54,10 +54,10 @@ class Brandi():
     """
 
     ### Initialization - Stage 0
-    def __init__(self, game_id, seed = None, game_name=None, host=None):
+    def __init__(self, game_id, host, seed = None, game_name=None):
         self.game_id = game_id
         self.game_name = game_name
-        self.host = host
+        self.host = Player(host.uid, host.name)
         self.game_state = 0 # start in the initialized state
         self.round_state = 0
 
@@ -75,6 +75,11 @@ class Brandi():
 
 
         self.card_swap_count = 0 # keep track of how many cards have been swapped so that cards are revealed to the players correctly
+
+    def set_name(self, name):
+        self.game_name = name
+    def set_host(self, player):
+        self.host = Player(player.uid, player.name)
 
     def player_join(self, player: Player):
         # have a player join the game
@@ -237,6 +242,8 @@ class Brandi():
         }
 
     def event_move_marble(self, player, action):
+        marble = self.players[player.uid].marbles[action.mid]
+        position = marble.curr
 
         if player.uid != self.order[self.active_player_index]:
             return {
@@ -383,7 +390,7 @@ class Brandi():
         return {
             'game_id': self.game_id,
             'game_name': self.game_name,
-            'host': self.host,
+            'host': self.host.to_json(),
             'game_state': self.game_state,
             'round_state': self.round_state,
             'round_turn': self.round_turn,
@@ -400,6 +407,7 @@ class Brandi():
         return {
             'game_id': self.game_id,
             'game_name': self.game_name,
+            'host': self.host.to_json(),
             'game_state': self.game_state,
             'round_state': self.round_state,
             'round_turn': self.round_turn,

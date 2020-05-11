@@ -16,5 +16,5 @@ class GamePublic(GameBase):
     active_player_index: int
     players: List[Player]
     # thilo branch
-    host: PlayerBase
+    host: Player
     game_name: str
