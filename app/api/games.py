@@ -121,7 +121,7 @@ def set_teams(game_id: str, player: Player, teams: List[Player]):
     return games[game_id].public_state()
 
 @router.post('/games/{game_id}/start')
-def start_game(game_id: str, player: Player):
+async def start_game(game_id: str, player: Player):
     """
     start an existing game
     """
@@ -131,7 +131,9 @@ def start_game(game_id: str, player: Player):
 
     res = games[game_id].start_game()
     if res['requestValid']:
-        sio_emit_game_state(game_id)
+        await sio_emit_game_state(game_id)
+        for uid in games[game_id].order:
+            await sio_emit_player_state(game_id, uid)
     return games[game_id].public_state()
 
 @router.get('/games/{game_id}/cards')
