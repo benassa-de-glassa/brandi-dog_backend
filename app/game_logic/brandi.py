@@ -96,10 +96,22 @@ class Brandi():
         player_ids (list): List of player_ids, players with index 0 and 2 play 
             together
         """
-        assert self.game_state < 2 # assert the game is not yet running
+        if not (self.game_state < 2): # assert the game is not yet running
+            return {
+                'requestValid': False,
+                'note': 'game has already started, you can no longer switch teams'
+            }
         for player in playerlist: # assert the user ids in user are in the game
-            assert player.uid in self.players
+            if player.uid not in self.players:
+                return {
+                    'requestValid': False,
+                    'note': f'Player {player.name} is not part of this game'
+                }
         self.order = [player.uid for player in playerlist]
+        return {
+                'requestValid': True,
+                'note': f'Teams modified successfully'
+            }
 
     def start_game(self):
         """
