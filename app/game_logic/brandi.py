@@ -241,14 +241,14 @@ class Brandi():
         }
 
     def event_move_marble(self, player, action):
-        marble = self.players[player.uid].marbles[action.mid]
-        position = marble.curr
+
 
         if player.uid != self.order[self.active_player_index]:
             return {
                 'requestValid': False,
                 'note': f'It is not player {player.name}s turn.'
             }
+
         marble = self.players[player.uid].marbles[action.mid]
         position = marble.curr
         if action.action not in self.players[player.uid].hand.cards[action.card.uid].action_options:
@@ -295,9 +295,21 @@ class Brandi():
 
             # use pnt variable to check the path along the action of the marble i.e. whether it 
             # is blocked or it may enter its goal
+            if position is  None:
+                return { 
+                    'requestValid': False,
+                    'note': 'In the starting position.'
+                }
+
             pnt = marble.curr
             for _ in range(action.action):
-                pnt = pnt.next
+                
+                # check whether pnt is looking at the own exit node and if it can enter
+                if marble.can_enter_goal and pnt.get_entry_node() == player.uid:
+                    pnt = pnt.exit
+                
+                else:
+                    pnt = pnt.next
                 # check whether a marble is blocking along the way
                 if pnt.is_blocking():
                     return { 
@@ -305,14 +317,16 @@ class Brandi():
                         'note': f'Blocked by a marble at position {pnt.position}.'
                     }
 
+
             if pnt.has_marble():
                 # kick the marble
                 pnt.marble.reset_to_starting_position()
             
-            # move the marble to the entry node
-            marble.set_new_position(pnt)
+
             # performing any motion with a marble on the field removes the blocking capability
             marble.blocking = False 
+            marble.can_enter_goal = True
+            marble.set_new_position(pnt)
 
             self.increment_active_player_index()
 
@@ -340,10 +354,14 @@ class Brandi():
                 # kick the marble
                 pnt.marble.reset_to_starting_position()
             
+
+            # performing any motion with a marble on the field removes the blocking capability
+            # it also allows the marble to enter the goal
+            marble.blocking = False 
+            marble.can_enter_goal = True
+
             # move the marble to the entry node
             marble.set_new_position(pnt)
-            # performing any motion with a marble on the field removes the blocking capability
-            marble.blocking = False 
 
             self.increment_active_player_index()
 
@@ -356,7 +374,13 @@ class Brandi():
             assert action.mid_2 is not None # make sure a second marble was submitted
             assert action.pid_2 is not None # make sure a playerid was submitted
 
-                
+
+            """
+            TODO: 
+             - check both marbles to be blocking and whether in goal etc.
+             - switch marbles
+            """
+
 
 
     """

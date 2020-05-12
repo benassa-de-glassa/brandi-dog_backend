@@ -23,28 +23,31 @@ class GameNode(Node):
         A game node cannot be blocking 
         This is a convinience function
         """
-        return False 
+        if self.marble is not None:
+            return self.marble.blocking
+        return False
+
     def has_marble(self):
         return self.marble is not None
+
+    def get_entry_node(self):
+        """
+        A game node cannot be an entry node
+        This is placed here for convience, such that
+        both the GameNode Class and the EntryExitNode 
+        class inherit the same
+        """
+        return False
 
 class EntryExitNode(GameNode):
     def __init__(self, uid, position):
         super().__init__(position)
 
         self.entry_exit_for_player = uid
-        self.exit = [None, None, None ,None]
-        
+        self.exit = None
 
-    def is_blocking(self):
-        """
-        returns true if a marble is placed in this node and the marble is blocking
-        returns false else
-
-        """
-        if self.marble is not None:
-            return self.marble.blocking
-        
-        return False
+    def get_entry_node(self):
+        return self.entry_exit_for_player
 
 
 
@@ -64,10 +67,19 @@ class Field():
 
         for i in range(len(players)): # range(4)
             new_entry_node = EntryExitNode(players[i], len(nodes))
-            new_entry_node.entry_exit_for_player = players[i]
+
             self.entry_nodes[players[i]] = new_entry_node
             nodes.append(new_entry_node)
-            
+
+            exit_nodes = []
+            for j in range(4):
+                new_node = GameNode(1000 + 10 * i + j) # goal nodes are designated by a position larger then 1000
+                exit_nodes.append(new_node)
+
+            new_entry_node.exit = exit_nodes[0]
+            for j in range(3):
+                exit_nodes[j].next = exit_nodes[j+1]
+                exit_nodes[j].prev = exit_nodes[j+1] # both directions point to the next, so that one can easily enter with a -4 but not exit
 
             for _ in range(NODES_BETWEEN_PLAYERS - 1):
                 new_node = GameNode(len(nodes))

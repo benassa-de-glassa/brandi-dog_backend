@@ -20,7 +20,7 @@ class Marble():
         self.can_enter_goal = False
 
     def reset_to_starting_position(self):
-        self.curr.marble = None
+        self.curr.unset_marble()
 
         self.prev = None
         self.curr = None
@@ -30,6 +30,10 @@ class Marble():
         self.can_enter_goal = False
 
     def set_new_position(self, node):
+        # remove the marble from the previous position
+        if self.curr is not None: 
+            self.curr.unset_marble()
+
         self.curr = node.curr
         self.prev = node.prev
         self.next = node.next
