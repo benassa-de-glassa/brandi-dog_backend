@@ -78,7 +78,7 @@ def initialize_new_game(player: Player, game_name: str = Body(...), seed: int=No
         game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4)) # generate new game ids until a new id is found
 
     games[game_id] = Brandi(game_id, game_name=game_name, host=player, seed=seed)
-    # games[game_id].player_join(player)
+    
     return games[game_id].public_state()
 
 @router.get('/games/{game_id}', response_model=GamePublic)
@@ -111,13 +111,18 @@ async def join_game(game_id: str, player: Player):
     return games[game_id].public_state()
 
 @router.post('/games/{game_id}/teams', response_model=GamePublic)
-def set_teams(game_id: str, player: Player, teams: List[Player]):
+async def set_teams(game_id: str, player: Player, teams: List[Player]):
     if player.uid not in games[game_id].players :
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.uid} not in Game.")
     if not all([_p.uid in games[game_id].players for _p in teams]): # check validity of teams
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Players not in Game.")
         
-    games[game_id].change_teams(teams)
+    res = games[game_id].change_teams(teams)
+    if res['requestValid']:
+        await sio_emit_game_state(game_id)    
+    else:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=res["note"])
+        return 
     return games[game_id].public_state()
 
 @router.post('/games/{game_id}/start')
@@ -149,7 +154,7 @@ def get_cards(game_id: str, player: Player):
     
 
 @router.post('/games/{game_id}/swap_cards')
-def swap_card(game_id: str, player: Player, card: CardBase):
+async def swap_card(game_id: str, player: Player, card: CardBase):
     """
     make the card swap before starting the round
     """
@@ -162,11 +167,11 @@ def swap_card(game_id: str, player: Player, card: CardBase):
     res = games[game_id].swap_card(player, card)
     if res["taskFinished"]:
         for uid in games[game_id].order:
-            sio_emit_player_state(game_id, uid)
+            await sio_emit_player_state(game_id, uid)
     return res # do not return cards at this point as the player is not allowed to view them yet
 
 @router.post('/games/{game_id}/fold')
-def fold_round(game_id: str, player: Player):
+async def fold_round(game_id: str, player: Player):
     """
     make the card swap before starting the round
     """
@@ -176,13 +181,13 @@ def fold_round(game_id: str, player: Player):
     res = games[game_id].event_player_fold(player)
     
     if res['requestValid']:
-        sio_emit_game_state(game_id)
+        await sio_emit_game_state(game_id)
     return games[game_id].get_cards(player)
 
     
 
 @router.post('/games/{game_id}/action')
-def perform_action(game_id: str, player: Player, action: Action):
+async def perform_action(game_id: str, player: Player, action: Action):
     """
     
     """
@@ -197,5 +202,9 @@ def perform_action(game_id: str, player: Player, action: Action):
     res = games[game_id].event_move_marble(player, action)
 
     if res['requestValid']:
-        sio_emit_game_state(game_id)
+        await sio_emit_game_state(game_id)
+        await sio_emit_player_state(game_id, player.uid)
+    else:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=res["note"])
+        return 
     return games[game_id].public_state()
