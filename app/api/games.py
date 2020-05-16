@@ -69,7 +69,7 @@ def get_list_of_games():
 @router.post('/games', response_model=GamePublic)
 # Body(...) is needed to not have game_name recognized as a query parameter
 # ... is the ellipsis and I have no clue why they decided to (ab)use this notation
-def initialize_new_game(player: Player, game_name: str = Body(...), seed: int=None, debug: bool=False): #player: Player, game_name: str, seed: int=None):
+def initialize_new_game(player: Player, game_name: str = Body(...), seed: int=None, debug: bool=False): 
     """
     start a new game
     """
@@ -77,7 +77,7 @@ def initialize_new_game(player: Player, game_name: str = Body(...), seed: int=No
     while game_id in games:
         game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4)) # generate new game ids until a new id is found
 
-    games[game_id] = Brandi(game_id, game_name=game_name, host=player, seed=seed, debug=False)
+    games[game_id] = Brandi(game_id, game_name=game_name, host=player, seed=seed, debug=debug)
     
     return games[game_id].public_state()
 
