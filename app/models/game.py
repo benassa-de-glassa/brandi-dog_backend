@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Dict, List
 
-from app.models.player import Player, PlayerPublic
+from app.models.player import PlayerBase, Player, PlayerPublic
 
 
 class GameBase(BaseModel):
@@ -14,4 +14,7 @@ class GamePublic(GameBase):
     round_turn: int
     order: List
     active_player_index: int
-    players: List[Player]
+    players: Dict[str, Player]
+    # thilo branch
+    host: Player
+    game_name: str

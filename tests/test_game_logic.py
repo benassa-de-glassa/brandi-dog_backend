@@ -12,7 +12,7 @@ class TestGame():
         self.id2 = User('Lara', 1)
         self.id3 = User('Thilo', 2)
         self.id4 = User('Bibi', 3)
-        self.game = Brandi('ABCD', seed=1)
+        self.game = Brandi('ABCD', seed=1, host=self.id1)
 
     def test_pre_start_game(self):
         assert self.game.game_state == 0

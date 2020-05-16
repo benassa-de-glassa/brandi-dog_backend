@@ -6,3 +6,9 @@ class User():
     def __init__(self, name, uid):
         self.name = name
         self.uid = uid
+
+    def to_json(self):
+        return {
+            'uid': self.uid,
+            'name':self.name
+        }
