@@ -130,9 +130,12 @@ async def start_game(game_id: str, player: Player):
     """
     start an existing game
     """
+    # check if the player is in the right game id
     if player.uid not in games[game_id].players:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"Player {player.uid} not in Game.")
-
+    # check if there are four players in the game
+    if len(games[game_id].players) != 4:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail='Not enough players.')
 
     res = games[game_id].start_game()
     if res['requestValid']:
