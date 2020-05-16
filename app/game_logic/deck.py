@@ -1,6 +1,6 @@
 import random
 
-from .card import Card
+from app.game_logic.card import Card
 class Deck():
 
     def __init__(self, seed):
