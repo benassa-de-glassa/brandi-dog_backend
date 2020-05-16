@@ -12,6 +12,7 @@ class Player(PlayerBase):
 
 class PlayerPublic(PlayerBase):
     marbles: List[Marble]
+    steps_of_seven: int
 
 class PlayerPrivate(Player):
     hand: List[Card]

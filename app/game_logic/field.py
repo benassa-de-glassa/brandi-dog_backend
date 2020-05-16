@@ -7,10 +7,12 @@ class Node(object):
         self.curr = self
     
 class GameNode(Node):
-    def __init__(self, position):
+    def __init__(self, position, marble=None):
         super().__init__()
         self.position = position
-        self.marble = None
+        self.marble = marble
+    # def __copy__(self):
+    #     return type(self)(position, Marble)
 
     def set_marble(self, marble):
         self.marble = marble
@@ -40,12 +42,12 @@ class GameNode(Node):
         return False
 
 class EntryExitNode(GameNode):
-    def __init__(self, uid, position):
+    def __init__(self, uid, position, marble=None, exit = None):
         super().__init__(position)
 
         self.entry_exit_for_player = uid
         self.exit = None
-
+    
     def get_entry_node(self):
         return self.entry_exit_for_player
 

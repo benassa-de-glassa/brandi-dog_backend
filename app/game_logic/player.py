@@ -24,6 +24,7 @@ class Player():
         # keep track of actions
         self.may_swap_cards = True
         self.has_folded = False
+        self.steps_of_seven_remaining = -1
 
     def set_color(self, color):
         self.color = color
@@ -67,7 +68,8 @@ class Player():
             'uid': self.uid,
             'name': self.name,
             'hand': self.hand.to_json() ,
-            'marbles': [marble.to_json() for marble in self.marbles.values()] 
+            'marbles': [marble.to_json() for marble in self.marbles.values()],
+            'steps_of_seven': self.steps_of_seven_remaining
         }
     def to_json(self):
         return {
