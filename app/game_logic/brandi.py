@@ -54,7 +54,7 @@ class Brandi():
     """
 
     ### Initialization - Stage 0
-    def __init__(self, game_id, seed = None):
+    def __init__(self, game_id, seed = None, debug=False):
         self.game_id = game_id
         self.game_state = 0 # start in the initialized state
         self.round_state = 0
@@ -73,6 +73,14 @@ class Brandi():
 
 
         self.card_swap_count = 0 # keep track of how many cards have been swapped so that cards are revealed to the players correctly
+        if debug:
+            test_players = [
+                {'name': 'Test Player 1', 'uid':'AAAA'},
+                {'name': 'Test Player 2', 'uid':'BBBB'},
+                {'name': 'Test Player 3', 'uid':'CCCC'},
+                ]
+            for player in test_players:
+                self.player_join(Player(player['uid'], player['name']))
 
 
 

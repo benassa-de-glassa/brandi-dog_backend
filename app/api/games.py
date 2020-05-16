@@ -70,7 +70,7 @@ def get_list_of_games():
     return [game_instance.public_state() for game_instance in games.values()]
 
 @router.post('/games', response_model=GamePublic)
-def initialize_new_game( player: Player, seed: int=None):
+def initialize_new_game( player: Player, seed: int=None, debug: bool=False):
     """
     start a new game
     """
@@ -79,7 +79,7 @@ def initialize_new_game( player: Player, seed: int=None):
     while game_id in games:
         game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4)) # generate new game ids until a new id is found
 
-    games[game_id] = Brandi(game_id, seed=seed)
+    games[game_id] = Brandi(game_id, seed=seed, debug=debug)
     games[game_id].player_join(player)
     return games[game_id].public_state()
 
