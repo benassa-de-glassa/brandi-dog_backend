@@ -555,3 +555,31 @@ class TestGame:
 
         assert res.status_code == 200
         assert res.json()["players"][self.players[0]["uid"]]["marbles"][1]["position"] == 1001
+
+        # player 0 and 1 fold. this should not be possible, but I 
+        # haven't implemented a check whether a player still has 
+        # playable cards
+        # 
+        # also its easier this way as I don't have to write more 
+        # requests to finish this round
+
+        # player 1 folds
+        res = client.post(f'v1/games/{self.game_ids[0]}/fold',
+            json=self.players[1],
+        )
+        assert res.status_code == 200
+
+        # player 0 folds
+        res = client.post(f'v1/games/{self.game_ids[0]}/fold',
+            json=self.players[0],
+        )
+
+        assert res.status_code == 200
+
+        # player 0 requests to view his new cards
+        res = client.get(f'v1/games/{self.game_ids[0]}/cards',
+            json=self.players[0],
+        )
+
+        assert res.status_code == 200
+        assert len(res.json()['hand']) == 5

@@ -243,10 +243,22 @@ class Brandi():
         """
         increment the active player index until a player is found who has not yet folded
         """
+        skipped_player_count = 0
+        
         self.active_player_index = (self.active_player_index + 1) % PLAYER_COUNT
 
         while self.players[self.order[self.active_player_index]].has_finished():
             self.active_player_index = (self.active_player_index + 1) % PLAYER_COUNT
+            if skipped_player_count == PLAYER_COUNT: # if all players have been skipped then the round has finished and a new round starts
+                
+                self.start_round()
+                return {
+                    'requestValid': True,
+                    'note': f'Round #{self.round_turn} has started due to all players having no cards left.',
+                    'new_round': True
+                }
+                
+            skipped_player_count += 1
 
 
     """
@@ -257,16 +269,28 @@ class Brandi():
         """
         
         """
+        
+        
+        # for self.check_card_marble_action
+        # check whether the player can at this point play one of his cards and perform an action of those on one of his marbles
+        '''
+        can_play = True
+        for card in self.players[player.uid].hand.cards.values():
+            for possible_action in card.action_options:
+                for marble in self.players[player.uid].marbles:
+                    pass
+        '''
+        
         self.players[player.uid].fold()
-        self.increment_active_player_index()
+        res = self.increment_active_player_index()
+        if res is not None:
+            return res
         return {
             'requestValid': True,
             'note': f'Player {player.name} has folded for this round.' 
         }
 
     def event_move_marble(self, player, action):
-
-
         if player.uid != self.order[self.active_player_index]:
             return {
                 'requestValid': False,
@@ -616,9 +640,9 @@ class Brandi():
             'active_player_index': self.active_player_index,
         }
     
-    def from_json(self):
+    def from_json(self, file):
         """
         Set game state from a JSON object
 
         """
-        pass
+        state = json.load(file)
