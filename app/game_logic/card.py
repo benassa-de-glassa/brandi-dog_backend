@@ -5,6 +5,7 @@ class Card():
 
     action_options values can be the following:
         0: get started
+        1: move up 1
         2: move up 2
         3: move up 3
         4: move up 4
@@ -15,6 +16,9 @@ class Card():
         8: move up 8
         9: move up 9
         10: move up 10
+        11: move up 11
+        12: move up 12
+        13: move up 14
         switch: switch marble position with opponents marble
 
     """
