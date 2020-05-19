@@ -193,7 +193,7 @@ class TestGame:
     ]
     """
 
-    def test_move_marble(self):
+    def test_0_player_0_moves_from_house(self):
         # player 0 makes a move
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
@@ -215,6 +215,7 @@ class TestGame:
         assert res.json()["players"][self.players[0]["uid"]
                                      ]["marbles"][0]["position"] == 0
 
+    def test_1_player_1_moves_from_house(self):
         # player 1 makes a move
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
@@ -235,12 +236,14 @@ class TestGame:
         assert res.json()["players"][self.players[1]["uid"]
                                      ]["marbles"][0]["position"] == 16
 
+    def test_2_player_2_folds(self):
         # player 2 has to fold
         res = client.post(f'v1/games/{self.game_ids[0]}/fold',
                           json=self.players[2],
                           )
         assert res.json()['hand'] == []
 
+    def test_3_player_3_moves_from_house(self):
         # player 3 makes a move
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
@@ -307,6 +310,7 @@ class TestGame:
         ]
         """
 
+    def test_4_player_0_moves_back_four(self):
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
                               "player": self.players[0],
@@ -326,7 +330,8 @@ class TestGame:
         assert res.status_code == 200
         assert res.json()["players"][self.players[0]["uid"]
                                      ]["marbles"][0]["position"] == 60
-
+    
+    def test_5_player_1_moves_up_three(self):
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
                               "player": self.players[1],
@@ -399,6 +404,8 @@ class TestGame:
             }
         }
         """
+
+    def test_6_player_3_moves_up_12_and_kicks_player_0(self):
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
                               "player": self.players[3],
@@ -420,6 +427,7 @@ class TestGame:
         assert res.json()["players"][self.players[0]["uid"]
                                      ]["marbles"][0]["position"] == -1
 
+    def test_7_player_0_moves_from_house(self):
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
                               "player": self.players[0],
@@ -440,6 +448,7 @@ class TestGame:
         assert res.json()["players"][self.players[0]["uid"]
                                      ]["marbles"][1]["position"] == 0
 
+    def test_8_player_1_bad_request(self):
         # make bad request by trying to start a marble which is not in a starting postion
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
@@ -458,6 +467,7 @@ class TestGame:
                           )
         assert res.status_code == 400
 
+    def test_10_player_1_moves_from_house(self):
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
                               "player": self.players[1],
@@ -480,6 +490,7 @@ class TestGame:
         assert res.json()["players"][self.players[1]["uid"]
                                      ]["marbles"][1]["position"] == 16
 
+    def test_11_player_3_marble_blocked(self):
         # bad request should fail as there is a marble blocking
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
@@ -498,6 +509,7 @@ class TestGame:
                           )
         assert res.status_code == 400
 
+    def test_12_player_3_folds(self):
         # player 3 has to fold as he has no viable cards
         res = client.post(f'v1/games/{self.game_ids[0]}/fold',
                           json=self.players[3],
@@ -505,6 +517,7 @@ class TestGame:
         assert res.status_code == 200
         assert res.json()['hand'] == []
 
+    def test_13_player_0_moves_back_four(self):
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
                               "player": self.players[0],
@@ -525,6 +538,7 @@ class TestGame:
         assert res.json()["players"][self.players[0]["uid"]
                                      ]["marbles"][1]["position"] == 60
 
+    def test_14_player_1_kicks_himself(self):
         # player 1 decides to kick his own marble at position 19
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
@@ -547,6 +561,7 @@ class TestGame:
         assert res.json()["players"][self.players[1]["uid"]
                                      ]["marbles"][1]["position"] == 19
 
+    def test_15_player_0_moves_to_home(self):
         # player 0 moves 6 steps ahead, thereby entering his own goal
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
                           json={
@@ -565,7 +580,7 @@ class TestGame:
 
         assert res.status_code == 200
         assert res.json()["players"][self.players[0]["uid"]
-                                     ]["marbles"][1]["position"] == 1001
+                                     ]["marbles"][1]["position"] == 1002
 
         # player 0 and 1 fold. this should not be possible, but I
         # haven't implemented a check whether a player still has
@@ -574,12 +589,14 @@ class TestGame:
         # also its easier this way as I don't have to write more
         # requests to finish this round
 
+    def test_16_player_1_folds(self):
         # player 1 folds
         res = client.post(f'v1/games/{self.game_ids[0]}/fold',
                           json=self.players[1],
                           )
         assert res.status_code == 200
 
+    def test_17_player_1_folds(self):
         # player 0 folds
         res = client.post(f'v1/games/{self.game_ids[0]}/fold',
                           json=self.players[0],
@@ -587,6 +604,7 @@ class TestGame:
 
         assert res.status_code == 200
 
+    def test_18_player_0_view_cards(self):
         # player 0 requests to view his new cards
         res = client.get(f'v1/games/{self.game_ids[0]}/cards',
                          json=self.players[0],
@@ -594,7 +612,3 @@ class TestGame:
 
         assert res.status_code == 200
         assert len(res.json()['hand']) == 5
-
-        print(res.json())
-
-        assert False
