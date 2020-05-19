@@ -22,7 +22,7 @@ class Brandi():
             - 1: ready to be started
             - 2: running
             - 3: finished, ready to be purged
-            - 4: purged
+            - 4: purged # should never be seen
         Brandi.round_state can take values between 0 and 2 indicating one of the
         following round states:
             - 0: round has not yet started # should only be the case for the very first round of a game
@@ -70,9 +70,6 @@ class Brandi():
         # beginning of each round
         self.round_turn = 0 # count which turn is reached
 
-        self.blocking_positions = list(range(0, FIELD_SIZE, NODES_BETWEEN_PLAYERS))
-
-
         self.card_swap_count = 0 # keep track of how many cards have been swapped so that cards are revealed to the players correctly
         if debug:
             test_players = [
@@ -82,6 +79,8 @@ class Brandi():
                 ]
             for player in test_players:
                 self.player_join(Player(player['uid'], player['name']))
+
+        self.top_card = None # not actually necessary for the game, but nice to look at on the frontend
 
     def set_name(self, name):
         self.game_name = name
@@ -96,7 +95,7 @@ class Brandi():
                     'note': 'Player has already joined the game.'
                 }
         self.players[player.uid] = Player(player.uid, player.name)
-        self.order.append(player.uid)
+        self.order.insert(0, player.uid) # place new player at the beginning of the list to make testing easier when debugging
 
     def change_teams(self, playerlist):
         """
@@ -182,8 +181,8 @@ class Brandi():
                 }
         self.game_state = 2
         self.round_state = 1
-
         self.deal_cards()
+        self.round_turn += 1
 
         # reset the has folded attribute
         for uid in self.order:
@@ -228,6 +227,7 @@ class Brandi():
             # reset swapping ability for next round
             for uid in self.order:
                 self.players[uid].may_swap_cards = True
+            self.round_state += 1
             return { 
                     'requestValid': True,
                     'taskFinished': True, 
@@ -250,7 +250,7 @@ class Brandi():
         while self.players[self.order[self.active_player_index]].has_finished():
             self.active_player_index = (self.active_player_index + 1) % PLAYER_COUNT
             if skipped_player_count == PLAYER_COUNT: # if all players have been skipped then the round has finished and a new round starts
-                
+                self.round_state = 5
                 self.start_round()
                 return {
                     'requestValid': True,
@@ -296,14 +296,27 @@ class Brandi():
                 'requestValid': False,
                 'note': f'It is not player {player.name}s turn.'
             }
+        if action.card.uid not in self.players[player.uid].hand.cards:
+            return { 
+                    'requestValid': False,
+                    'note': 'You do not have this card.'
+                }
 
-        marble = self.players[player.uid].marbles[action.mid]
-        pnt = marble.curr
         if action.action not in self.players[player.uid].hand.cards[action.card.uid].action_options:
             return { 
                     'requestValid': False,
                     'note': 'Desired action does not match the card.'
                 }
+
+        if self.players[self.order[self.active_player_index]].steps_of_seven_remaining != -1:
+            return { 
+                    'requestValid': False,
+                    'note': f'Player {player.name} has to finish using his seven moves.'
+                }
+
+        marble = self.players[player.uid].marbles[action.mid]
+        pnt = marble.curr
+
         #  get out of the start
         if action.action == 0: 
             if pnt is not None:
@@ -332,7 +345,7 @@ class Brandi():
                 marble.blocking = True # make the marble blocking other marbles
                 
                 self.increment_active_player_index()
-
+                self.top_card = self.players[player.uid].hand.play_card(action.card)
                 return {
                     'requestValid': True,
                     'note': f'Marble {action.mid} moved to {marble.curr.position}.' 
@@ -357,7 +370,7 @@ class Brandi():
                     flag_home_is_blocking = False
                     pnt_copy = pnt.curr # make a copy of the pointer to check whether or not the home fields are blocking
                     pnt_copy.next = pnt_copy.exit
-                    for j in range(i, action.action-1): # check the remaining steps in goal for blockage
+                    for _ in range(i, action.action): # check the remaining steps in goal for blockage
                         pnt_copy = pnt_copy.next
                         flag_home_is_blocking = pnt_copy.is_blocking()
                     
@@ -386,8 +399,8 @@ class Brandi():
             marble.blocking = False + flag_has_entered_home
             marble.can_enter_goal = True
             marble.set_new_position(pnt)
-
             self.increment_active_player_index()
+            self.top_card = self.players[player.uid].hand.play_card(action.card)
 
             return {
                 'requestValid': True,
@@ -423,6 +436,7 @@ class Brandi():
             marble.set_new_position(pnt)
 
             self.increment_active_player_index()
+            self.top_card = self.players[player.uid].hand.play_card(action.card)
 
             return {
                 'requestValid': True,
@@ -456,14 +470,10 @@ class Brandi():
                 }
             self.players[player.uid].marbles[action.mid].set_new_position(marble_2_node)
             self.players[action.pid_2].marbles[action.mid_2].set_new_position(marble_2_node)
-            """
-            TODO: 
-             - check both marbles to be blocking and whether in goal etc.
-             - switch marbles
-            """
+            self.increment_active_player_index()
 
 
-
+            self.top_card = self.players[player.uid].hand.play_card(action.card)
 
 
         elif action.action == 7:
@@ -493,7 +503,7 @@ class Brandi():
                 flag_home_is_blocking = False
                 pnt_copy = pnt.curr # make a copy of the pointer to check whether or not the home fields are blocking
                 pnt_copy.next = pnt_copy.exit
-                for j in range(1): # check the remaining steps in goal for blockage
+                for _ in range(1): # check the remaining steps in goal for blockage
                     pnt_copy = pnt_copy.next
                     flag_home_is_blocking = pnt_copy.is_blocking()
                 
@@ -528,6 +538,8 @@ class Brandi():
             if self.players[player.uid].steps_of_seven_remaining == 1:
                 self.increment_active_player_index()
 
+                self.top_card = self.players[player.uid].hand.play_card(action.card)
+                self.players[player.uid].steps_of_seven_remaining = 7
 
             return {
                 'requestValid': True,
@@ -544,11 +556,12 @@ class Brandi():
     """
     Event Assertions
     """
-
+    '''
+    TODO: 
     def check_player_can_move(self, player):
         cards = self.players[player.uid].hand.cards
         marbles = self.players[player.uid].marbles
-
+    '''
 
     def check_card_marble_action(self, player, action, marble):
         """
@@ -594,10 +607,6 @@ class Brandi():
             if total_distance_to_blockade < 7:
                 return False
             return True
-                
-
-
-
         
 
     """
@@ -645,4 +654,5 @@ class Brandi():
         Set game state from a JSON object
 
         """
-        state = json.load(file)
+        # state = json.load(file)
+        pass
