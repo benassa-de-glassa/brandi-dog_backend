@@ -1,6 +1,8 @@
 import random
 
 from app.game_logic.card import Card
+
+
 class Deck():
 
     def __init__(self, seed):
@@ -10,13 +12,14 @@ class Deck():
         self.N = 0
 
         self.cards = []
-        
-        values = ['A', 'K', 'Q', 'Ja', '10', '9', '8', '7', '6', '5', '4', '3', '2']
+
+        values = ['A', 'K', 'Q', 'Ja', '10', '9',
+                  '8', '7', '6', '5', '4', '3', '2']
         colors = ['clubs', 'diamonds', 'hearts', 'spades']
-        for value in values: # go through all card values except the Joker
-            for color in colors: # go through all 4 colors
-                for _ in range(2): # playing with two decks
-                    self.cards.append(Card( value, color, self.N))
+        for value in values:  # go through all card values except the Joker
+            for color in colors:  # go through all 4 colors
+                for _ in range(2):  # playing with two decks
+                    self.cards.append(Card(value, color, self.N))
                     self.N += 1
 
         # add the 6 jokers
@@ -24,11 +27,11 @@ class Deck():
             self.cards.append(Card('Jo', 'Jo', self.N))
             self.N += 1
 
-        random.shuffle(self.cards) # shuffle the deck
+        random.shuffle(self.cards)  # shuffle the deck
 
     def give_card(self):
         return self.cards.pop(0)
-    
+
     def deck_size(self):
         return len(self.cards)
     """
@@ -36,6 +39,7 @@ class Deck():
 
     write and read the state of the deck as JSON
     """
+
     def to_json(self):
         return [card.uid for card in self.cards]
 

@@ -32,20 +32,20 @@ app.add_middleware(
 app.include_router(
     games.router,
     prefix='/v1'
-    )
+)
 
 app.include_router(
     chats.router,
     prefix='/v1'
-    )
+)
 
 app.include_router(
     users.router,
     prefix='/v1'
-    )
+)
 
 # create socket.io app
 sio_app = socketio.ASGIApp(socketio_server=sio, other_asgi_app=app)
 
 if __name__ == "__main__":
-    uvicorn.run(sio_app, host="0.0.0.0", port=8000 , debug=True)
+    uvicorn.run(sio_app, host="0.0.0.0", port=8000, debug=True)

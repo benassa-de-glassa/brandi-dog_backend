@@ -8,6 +8,7 @@ class GameBase(BaseModel):
     game_id: str
     players: List[Player]
 
+
 class GamePublic(GameBase):
     game_state: int
     round_state: int

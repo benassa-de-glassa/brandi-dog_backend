@@ -22,11 +22,12 @@ class Card():
         switch: switch marble position with opponents marble
 
     """
+
     def __init__(self, value, color, uid):
         self.uid = uid
         self.value = value
         self.color = color
-        
+
         if self.value == 'A':
             self.action_options = [0, 1, 11]
         if self.value == 'K':
@@ -54,14 +55,12 @@ class Card():
         if self.value == '2':
             self.action_options = [2]
         if self.value == 'Jo':
-            self.action_options = [*list(range( 0, 14)), 'switch', -4]
-
-        
+            self.action_options = [*list(range(0, 14)), 'switch', -4]
 
     def to_json(self):
         return {
             'uid': self.uid,
-            'value' : self.value,
-            'color' : self.color,
+            'value': self.value,
+            'color': self.color,
             'actions': self.action_options
         }

@@ -5,7 +5,7 @@ class Hand():
     def play_card(self, card):
         assert card.uid in self.cards
         return self.cards.pop(card.uid)
-        
+
     def set_card(self, card):
         assert card.uid not in self.cards
         self.cards[card.uid] = card

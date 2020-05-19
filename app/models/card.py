@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 from typing import List, Union
 
+
 class CardBase(BaseModel):
     uid: int
+
 
 class Card(CardBase):
     uid: int

@@ -6,6 +6,7 @@ from app.game_logic.user import User
 
 from app.game_logic.field import EntryExitNode
 
+
 class TestGame():
     def setup_class(self):
         self.id1 = User('Bene', 0)
