@@ -539,7 +539,7 @@ class Brandi():
                 self.increment_active_player_index()
 
                 self.top_card = self.players[player.uid].hand.play_card(action.card)
-                self.players[player.uid].steps_of_seven_remaining = 7
+                self.players[player.uid].steps_of_seven_remaining = -1
 
             return {
                 'requestValid': True,
