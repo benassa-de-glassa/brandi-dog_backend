@@ -53,8 +53,11 @@ class Player():
         self.hand.fold()
         self.has_folded = True
 
-    def has_finished(self):
+    def has_finished_cards(self):
         return self.has_folded or self.hand.cards == {}
+
+    def has_finished_marbles(self):
+        return sum([marble.curr.position for marble in self.marbles.values()]) > 4000
 
     """
     Player State

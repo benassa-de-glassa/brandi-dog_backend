@@ -251,7 +251,7 @@ class Brandi():
         self.active_player_index = (
             self.active_player_index + 1) % PLAYER_COUNT
 
-        while self.players[self.order[self.active_player_index]].has_finished():
+        while self.players[self.order[self.active_player_index]].has_finished_cards():
             self.active_player_index = (
                 self.active_player_index + 1) % PLAYER_COUNT
             # if all players have been skipped then the round has finished and a new round starts
@@ -320,6 +320,9 @@ class Brandi():
             }
 
         marble = self.players[player.uid].marbles[action.mid]
+        if self.players[player.uid].has_finished_marbles():
+            team_member = self.order[(self.order.index(player.uid) + PLAYER_COUNT // 2) % PLAYER_COUNT] 
+            marble = self.players[team_member].marbles[action.mid]
         pnt = marble.curr
 
         #  get out of the start
