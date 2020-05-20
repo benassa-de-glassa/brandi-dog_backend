@@ -247,6 +247,29 @@ class Brandi():
         increment the active player index until a player is found who has not yet folded
         """
         skipped_player_count = 0
+        # check for victory
+        team_1_has_won = True
+        team_2_has_won = True
+        for i, player_uid in enumerate(self.order):
+            if i % 2 == 0:
+                team_1_has_won *= self.players[player_uid].has_finished_marbles()
+            else:
+                team_2_has_won *= self.players[player_uid].has_finished_marbles()
+
+        if team_1_has_won:
+            self.game_state = 3
+            return {
+                'requestValid': True,
+                'note': f'Team 1 of players {self.players[self.order[0]].name} and {self.players[self.order[2]].name} have won.',
+                'gameOver': True
+            }
+        if team_2_has_won:
+            self.game_state = 3
+            return {
+                'requestValid': True,
+                'note': f'Team 2 of players {self.players[self.order[1]].name} and {self.players[self.order[3]].name} have won.',
+                'gameOver': True
+            }
 
         self.active_player_index = (
             self.active_player_index + 1) % PLAYER_COUNT
@@ -321,7 +344,8 @@ class Brandi():
 
         marble = self.players[player.uid].marbles[action.mid]
         if self.players[player.uid].has_finished_marbles():
-            team_member = self.order[(self.order.index(player.uid) + PLAYER_COUNT // 2) % PLAYER_COUNT] 
+            team_member = self.order[(self.order.index(
+                player.uid) + PLAYER_COUNT // 2) % PLAYER_COUNT]
             marble = self.players[team_member].marbles[action.mid]
         pnt = marble.curr
 
