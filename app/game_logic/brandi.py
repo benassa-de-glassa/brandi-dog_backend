@@ -482,6 +482,11 @@ class Brandi():
             }
 
         elif action.action == 'switch':
+            if player.uid == action.pid_2:
+                return {
+                    'requestValid': False,
+                    'note': f'You can not swap two of your own marbles.'
+                }
             if action.mid_2 is None:
                 return {
                     'requestValid': False,
