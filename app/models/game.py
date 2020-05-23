@@ -1,8 +1,8 @@
 from pydantic import BaseModel
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from app.models.player import PlayerBase, Player, PlayerPublic
-
+from app.models.card import Card
 
 class GameBase(BaseModel):
     game_id: str
@@ -19,3 +19,4 @@ class GamePublic(GameBase):
     # thilo branch
     host: Player
     game_name: str
+    top_card: Optional[Card]

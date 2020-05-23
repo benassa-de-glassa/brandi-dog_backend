@@ -319,6 +319,11 @@ class Brandi():
         }
 
     def event_move_marble(self, player, action):
+        if self.round_state != 4:
+            return {
+                'requestValid': False,
+                'note': f'You have to finish swapping cards first.'
+            }
         if player.uid != self.order[self.active_player_index]:
             return {
                 'requestValid': False,
@@ -663,7 +668,8 @@ class Brandi():
             'round_turn': self.round_turn,
             'order': self.order,
             'active_player_index': self.active_player_index,
-            'players': {uid: self.players[uid].to_json() for uid in self.order}
+            'players': {uid: self.players[uid].to_json() for uid in self.order},
+            'top_card': self.top_card
         }
 
     def to_json(self):
@@ -682,6 +688,7 @@ class Brandi():
             'players': [player.to_json() for player in self.players],
             'order': self.order,
             'active_player_index': self.active_player_index,
+            'top_card': self.top_card
         }
 
     def from_json(self, file):
