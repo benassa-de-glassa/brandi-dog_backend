@@ -202,8 +202,11 @@ class Brandi():
         deal the correct number of cards to all players depending on the current
         round turn
         """
-        assert self.game_state == 2 and self.round_state == 1  # check that the game is in the correct state
-
+        if not (self.game_state == 2 and self.round_state == 1):  # check that the game is in the correct state
+            return {
+                'requestValid': False,
+                'note': f'The game is not in the correct state to deal cards.'
+            }
         for uid in self.order:
             for _ in range(self.round_cards[self.round_turn % 5]):
                 self.players[uid].set_card(self.deck.give_card())
@@ -211,8 +214,16 @@ class Brandi():
         self.round_state = 2
 
     def swap_card(self, player, card):
-        assert self.round_state == 2
-        assert self.players[player.uid].may_swap_cards
+        if not self.round_state == 2:
+            return {
+                'requestValid': False,
+                'note': f'The round is not in the game swapping state.'
+            }
+        if not self.players[player.uid].may_swap_cards:
+            return {
+                'requestValid': False,
+                'note': f'You have already swapped a card.'
+            }
         team_member = self.order[(self.order.index(
             player.uid) + PLAYER_COUNT // 2) % PLAYER_COUNT]  # find the teammember
 
@@ -674,7 +685,7 @@ class Brandi():
             'order': self.order,
             'active_player_index': self.active_player_index,
             'players': {uid: self.players[uid].to_json() for uid in self.order},
-            'top_card': self.top_card
+            'top_card': self.top_card.to_json() if self.top_card is not None else None
         }
 
     def to_json(self):
@@ -693,7 +704,7 @@ class Brandi():
             'players': [player.to_json() for player in self.players],
             'order': self.order,
             'active_player_index': self.active_player_index,
-            'top_card': self.top_card
+            'top_card': self.top_card.to_json() if self.top_card is not None else None
         }
 
     def from_json(self, file):
