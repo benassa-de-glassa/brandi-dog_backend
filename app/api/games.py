@@ -199,6 +199,8 @@ async def swap_card(game_id: str, player: Player, card: CardBase):
     if res["taskFinished"]:
         for uid in games[game_id].order:
             await sio_emit_player_state(game_id, uid)
+        await sio_emit_game_state(game_id)
+        
     return res  # do not return cards at this point as the player is not allowed to view them yet
 
 
