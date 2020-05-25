@@ -1,5 +1,5 @@
-# Flämi Dog
-online Flämi
+# brandi-dog_backend
 
-Frontend: https://github.com/benassa-de-glassa/brandi-dog_frontend
+Boomer Dog Online!
 
+front end: https://github.com/benassa-de-glassa/brandi-dog_frontend
