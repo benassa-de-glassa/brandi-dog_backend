@@ -217,6 +217,8 @@ async def fold_round(game_id: str, player: Player):
 
     if res['requestValid']:
         await sio_emit_game_state(game_id)
+        for uid in games[game_id].order:
+            await sio_emit_player_state(game_id, uid)
     return games[game_id].get_cards(player)
 
 
