@@ -16,6 +16,7 @@ class GamePublic(GameBase):
     order: List
     active_player_index: int
     players: Dict[str, Player]
+    player_list: List[Player] # kind of redundant with players
     # thilo branch
     host: Player
     game_name: str

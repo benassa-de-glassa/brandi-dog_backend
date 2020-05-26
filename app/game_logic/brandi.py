@@ -689,6 +689,7 @@ class Brandi():
             'order': self.order,
             'active_player_index': self.active_player_index,
             'players': {uid: self.players[uid].to_json() for uid in self.order},
+            'player_list': [self.players[uid].to_json() for uid in self.order],
             'top_card': self.top_card.to_json() if self.top_card is not None else None
         }
 
