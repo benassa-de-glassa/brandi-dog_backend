@@ -412,7 +412,7 @@ class Brandi():
 
             flag_has_entered_home = False
             for i in range(action.action):
-
+                
                 # check whether pnt is looking at the own exit node and if it can enter
                 if marble.can_enter_goal and pnt.get_entry_node() == player.uid:
                     flag_home_is_blocking = False
@@ -493,21 +493,25 @@ class Brandi():
             }
 
         elif action.action == 'switch':
-            if player.uid == action.pid_2:
-                return {
-                    'requestValid': False,
-                    'note': f'You can not swap two of your own marbles.'
-                }
             if action.mid_2 is None:
                 return {
                     'requestValid': False,
                     'note': f'No marble to switch was selected.'
                 }
-            if action.pid_2 is None:  # make sure a playerid was submitted
+            if not action.pid_2:
+                # if the player id is not sent, get the pid_2 from the marble id which is in range of 4*pid, 4*pid+4
+                action.pid_2 = self.order[action.mid_2 // PLAYER_COUNT]
+
+            if player.uid == action.pid_2:
+                return {
+                    'requestValid': False,
+                    'note': f'You can not swap two of your own marbles.'
+                }
+            '''if action.pid_2 is None:  # make sure a playerid was submitted
                 return {
                     'requestValid': False,
                     'note': f'No player to switch was selected.'
-                }
+                }'''
 
             marble_1_node = self.players[player.uid].marbles[action.mid].curr
             marble_2_node = self.players[action.pid_2].marbles[action.mid_2].curr
