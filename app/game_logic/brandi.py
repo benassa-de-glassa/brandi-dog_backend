@@ -530,12 +530,12 @@ class Brandi():
             if marble_1_node.curr.is_blocking():
                 return {
                     'requestValid': False,
-                    'note': f'Marble {marble_1_node.mid} is blocking.'
+                    'note': f'Marble {action.mid} is blocking.'
                 }
             if marble_2_node.curr.is_blocking():
                 return {
                     'requestValid': False,
-                    'note': f'Marble {marble_2_node.mid} is blocking.'
+                    'note': f'Marble {action.mid_2} is blocking.'
                 }
             self.players[player.uid].marbles[action.mid].set_new_position(
                 marble_2_node)
@@ -547,7 +547,7 @@ class Brandi():
 
             return {
                 'requestValid': True, 
-                'note': f'switched {marble_1_node.mid} and {marble_2_node.mid} successfully'
+                'note': f'switched {action.mid} and {action.mid_2} successfully'
             }
 
         elif action.action == 7:
