@@ -454,7 +454,7 @@ class Brandi():
 
             # performing any motion with a marble on the field removes the blocking capability
             # however entering the goals makes the marble blocking again
-            marble.blocking = False + flag_has_entered_home
+            marble.blocking = False + (pnt.position >= 1000) # if the pointers position is >= 1000 then the marble is at home and therefor blocking
             marble.can_enter_goal = True
             marble.set_new_position(pnt)
             self.increment_active_player_index()
@@ -633,7 +633,7 @@ class Brandi():
 
             # performing any motion with a marble on the field removes the blocking capability
             # however entering the goals makes the marble blocking again
-            marble.blocking = False + flag_has_entered_home
+            marble.blocking = False + (pnt.position >= 1000) # if the marble position is >= 1000 then the marble is at home and therefore blocking 
             marble.can_enter_goal = True
             marble.set_new_position(pnt)
             self.players[player.uid].steps_of_seven_remaining -= action.action
