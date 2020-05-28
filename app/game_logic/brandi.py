@@ -412,7 +412,7 @@ class Brandi():
 
             flag_has_entered_home = False
             for i in range(action.action):
-
+                
                 # check whether pnt is looking at the own exit node and if it can enter
                 if marble.can_enter_goal and pnt.get_entry_node() == player.uid:
                     flag_home_is_blocking = False
@@ -493,21 +493,25 @@ class Brandi():
             }
 
         elif action.action == 'switch':
-            if player.uid == action.pid_2:
-                return {
-                    'requestValid': False,
-                    'note': f'You can not swap two of your own marbles.'
-                }
             if action.mid_2 is None:
                 return {
                     'requestValid': False,
                     'note': f'No marble to switch was selected.'
                 }
-            if action.pid_2 is None:  # make sure a playerid was submitted
+            if not action.pid_2:
+                # if the player id is not sent, get the pid_2 from the marble id which is in range of 4*pid, 4*pid+4
+                action.pid_2 = self.order[action.mid_2 // PLAYER_COUNT]
+
+            if player.uid == action.pid_2:
+                return {
+                    'requestValid': False,
+                    'note': f'You can not swap two of your own marbles.'
+                }
+            '''if action.pid_2 is None:  # make sure a playerid was submitted
                 return {
                     'requestValid': False,
                     'note': f'No player to switch was selected.'
-                }
+                }'''
 
             marble_1_node = self.players[player.uid].marbles[action.mid].curr
             marble_2_node = self.players[action.pid_2].marbles[action.mid_2].curr
@@ -529,6 +533,11 @@ class Brandi():
             self.increment_active_player_index()
             self.top_card = self.players[player.uid].hand.play_card(
                 action.card)
+
+            return {
+                'requestValid': True, 
+                'note': f'switched {marble_1_node.mid} and {marble_2_node.mid} successfully'
+            }
 
         elif action.action == 7:
             if pnt is None:
@@ -685,6 +694,7 @@ class Brandi():
             'order': self.order,
             'active_player_index': self.active_player_index,
             'players': {uid: self.players[uid].to_json() for uid in self.order},
+            'player_list': [self.players[uid].to_json() for uid in self.order],
             'top_card': self.top_card.to_json() if self.top_card is not None else None
         }
 
