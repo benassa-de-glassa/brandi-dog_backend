@@ -543,7 +543,7 @@ class Brandi():
             self.players[player.uid].marbles[action.mid].set_new_position(
                 marble_2_node)
             self.players[action.pid_2].marbles[action.mid_2].set_new_position(
-                marble_2_node)
+                marble_1_node)
             self.increment_active_player_index()
             self.top_card = self.players[player.uid].hand.play_card(
                 action.card)
