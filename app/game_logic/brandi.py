@@ -352,7 +352,8 @@ class Brandi():
                 'note': 'Desired action does not match the card.'
             }
 
-        if self.players[self.order[self.active_player_index]].steps_of_seven_remaining != -1:
+        if self.players[self.order[self.active_player_index]].steps_of_seven_remaining != -1 \
+            and 7 not in action.card.action:
             return {
                 'requestValid': False,
                 'note': f'Player {player.name} has to finish using his seven moves.'
@@ -553,7 +554,8 @@ class Brandi():
                 'note': f'switched {action.mid} and {action.mid_2} successfully'
             }
 
-        elif action.action == 7:
+        # in case either a joker or a seven is played. all other cases are covered by the options above
+        elif 7 in action.card.action: # assume you want to play a 7 as the other options have been exausted
             if pnt is None:
                 return {
                     'requestValid': False,
@@ -576,45 +578,65 @@ class Brandi():
 
                 self.players[player.uid].steps_of_seven_remaining = 7
 
-            # check whether pnt is looking at the own exit node and if it can enter
-            if marble.can_enter_goal and pnt.get_entry_node() == player.uid:
-                flag_home_is_blocking = False
-                # make a copy of the pointer to check whether or not the home fields are blocking
-                pnt_copy = pnt.curr
-                pnt_copy = pnt_copy.exit
-                
-                flag_home_is_blocking = pnt_copy.is_blocking()
+            elif self.players[player.uid].steps_of_seven_remaining - action.action < 1:
+                '''
+                this is the case when a player wants to take more steps then he has left remaining
+                '''
+                return {
+                        'requestValid': False,
+                        'note': f'You attempted to take {action.action} steps, however you only have \
+                        {self.players[player.uid].steps_of_seven_remaining} steps left of your seven.'
+                    }
+            
+            for i in range(action.action):
+                # check whether pnt is looking at the own exit node and if it can enter
+                if marble.can_enter_goal and pnt.get_entry_node() == player.uid:
+                    flag_home_is_blocking = False
+                    # make a copy of the pointer to check whether or not the home fields are blocking
+                    pnt_copy = pnt.curr
+                    pnt_copy = pnt_copy.exit
+                    # pnt_copy.next = pnt_copy.exit
+                    # check the remaining steps in goal for blockage
+                    for _ in range(i, action.action-1): # one less step as the pointer has moved one through pnt_copy.exit
+                        flag_home_is_blocking = pnt_copy.is_blocking()
+                        pnt_copy = pnt_copy.next
 
-                if flag_home_is_blocking is False:
-                    pnt = pnt_copy
-                    flag_has_entered_home = True
+                    # if the the pointer was not blocked on its way in the home, then it is a valid action
+                    if not flag_home_is_blocking:
+                        pnt = pnt_copy
+                        flag_has_entered_home = True
+                        break # break out ouf the for loop taking all action steps, as they were taken by the pnt_copy pointer
+                    # if the pointer was blocked along its steps, then the marble couldn't enter the home
+                    else:
+                        pnt = pnt.next
                 else:
                     pnt = pnt.next
-            else:
-                pnt = pnt.next
-            if pnt is None: 
-                return {
+
+                # pnt can only be None when the last node of the home fields has been reached
+                if pnt is None: 
+                    return {
                         'requestValid': False,
                         'note': f'You cannot enter your goal without going to far.'
                     }
-            # check whether a marble is blocking along the way
-            if pnt.is_blocking():
-                return {
-                    'requestValid': False,
-                    'note': f'Blocked by a marble at position {pnt.position}.'
-                }
-
-            if pnt.has_marble():
-                # kick the marble
-                pnt.marble.reset_to_starting_position()
+                # check whether a marble is blocking along the way
+                if pnt.is_blocking():
+                    return {
+                        'requestValid': False,
+                        'note': f'Blocked by a marble at position {pnt.position}.'
+                    }
+                
+                # this needs to be inside of the for loop as the 7 card kicks every marble along its path
+                # not just the one it lands on
+                if pnt.has_marble() and not pnt.is_blocking(): # is the is_blocking() redundant? i think it breaks before anyway
+                    # kick the marble
+                    pnt.marble.reset_to_starting_position()
 
             # performing any motion with a marble on the field removes the blocking capability
             # however entering the goals makes the marble blocking again
             marble.blocking = False + flag_has_entered_home
             marble.can_enter_goal = True
             marble.set_new_position(pnt)
-
-            self.players[player.uid].steps_of_seven_remaining -= 1
+            self.players[player.uid].steps_of_seven_remaining -= action.action
 
             if self.players[player.uid].steps_of_seven_remaining == 1:
                 self.increment_active_player_index()
