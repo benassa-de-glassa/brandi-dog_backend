@@ -534,6 +534,11 @@ class Brandi():
             self.top_card = self.players[player.uid].hand.play_card(
                 action.card)
 
+            return {
+                'requestValid': True, 
+                'note': f'switched {marble_1_node.mid} and {marble_2_node.mid} successfully'
+            }
+
         elif action.action == 7:
             if pnt is None:
                 return {
