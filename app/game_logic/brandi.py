@@ -421,13 +421,16 @@ class Brandi():
                     pnt_copy = pnt_copy.exit
                     # pnt_copy.next = pnt_copy.exit
                     # check the remaining steps in goal for blockage
-                    for _ in range(i, action.action-2): # one less step as the pointer has moved one through pnt_copy.exit
+                    for _ in range(i, action.action-1): # one less step as the pointer has moved one through pnt_copy.exit
                         flag_home_is_blocking = pnt_copy.is_blocking()
                         pnt_copy = pnt_copy.next
 
-                    if flag_home_is_blocking is False:
+                    # if the the pointer was not blocked on its way in the home, then it is a valid action
+                    if not flag_home_is_blocking:
                         pnt = pnt_copy
                         flag_has_entered_home = True
+                        break # break out ouf the for loop taking all action steps, as they were taken by the pnt_copy pointer
+                    # if the pointer was blocked along its steps, then the marble couldn't enter the home
                     else:
                         pnt = pnt.next
                 else:
