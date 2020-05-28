@@ -418,11 +418,12 @@ class Brandi():
                     flag_home_is_blocking = False
                     # make a copy of the pointer to check whether or not the home fields are blocking
                     pnt_copy = pnt.curr
-                    pnt_copy.next = pnt_copy.exit
+                    pnt_copy = pnt_copy.exit
+                    # pnt_copy.next = pnt_copy.exit
                     # check the remaining steps in goal for blockage
-                    for _ in range(i, action.action):
-                        pnt_copy = pnt_copy.next
+                    for _ in range(i, action.action-2): # one less step as the pointer has moved one through pnt_copy.exit
                         flag_home_is_blocking = pnt_copy.is_blocking()
+                        pnt_copy = pnt_copy.next
 
                     if flag_home_is_blocking is False:
                         pnt = pnt_copy
@@ -562,10 +563,9 @@ class Brandi():
                 flag_home_is_blocking = False
                 # make a copy of the pointer to check whether or not the home fields are blocking
                 pnt_copy = pnt.curr
-                pnt_copy.next = pnt_copy.exit
-                for _ in range(1):  # check the remaining steps in goal for blockage
-                    pnt_copy = pnt_copy.next
-                    flag_home_is_blocking = pnt_copy.is_blocking()
+                pnt_copy = pnt_copy.exit
+                
+                flag_home_is_blocking = pnt_copy.is_blocking()
 
                 if flag_home_is_blocking is False:
                     pnt = pnt_copy

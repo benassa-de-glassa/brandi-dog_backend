@@ -579,8 +579,9 @@ class TestGame:
                           )
 
         assert res.status_code == 200
+        # should be 1001
         assert res.json()["players"][self.players[0]["uid"]
-                                     ]["marbles"][1]["position"] == 1002
+                                     ]["marbles"][1]["position"] == 1001 
 
         # player 0 and 1 fold. this should not be possible, but I
         # haven't implemented a check whether a player still has
@@ -612,3 +613,132 @@ class TestGame:
 
         assert res.status_code == 200
         assert len(res.json()['hand']) == 5
+        self.cards[0] = res.json()['hand']
+        """ Player 0
+        'hand': 
+            [
+                {'uid': 23, 'value': 'Q', 'color': 'spades', 'actions': [12]}, 
+                {'uid': 50, 'value': '8', 'color': 'diamonds', 'actions': [8]}, 
+                {'uid': 24, 'value': 'Ja', 'color': 'clubs', 'actions': ['switch']}, 
+                {'uid': 22, 'value': 'Q', 'color': 'spades', 'actions': [12]}, 
+                {'uid': 66, 'value': '6', 'color': 'diamonds', 'actions': [6]}
+            ], 
+        'marbles': 
+            [
+                {'mid': 0, 'position': -1, 'color': 'red'}, 
+                {'mid': 1, 'position': 1002, 'color': 'red'}, 
+                {'mid': 2, 'position': -3, 'color': 'red'}, 
+                {'mid': 3, 'position': -4, 'color': 'red'}
+            ]
+        """
+
+    def test_19_player_1_view_cards(self):
+        # player 1 requests to view his new cards
+        res = client.get(f'v1/games/{self.game_ids[0]}/cards',
+                         json=self.players[1],
+                         )
+
+        assert res.status_code == 200
+        assert len(res.json()['hand']) == 5
+        self.cards[1] = res.json()['hand']
+
+        """ Player 1
+        'hand': 
+            [
+                {'uid': 109, 'value': 'Jo', 'color': 'Jo', 'actions': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 'switch', -4]}, 
+                {'uid': 39, 'value': '10', 'color': 'spades', 'actions': [10]}, 
+                {'uid': 71, 'value': '6', 'color': 'spades', 'actions': [6]}, 
+                {'uid': 94, 'value': '3', 'color': 'spades', 'actions': [3]}, 
+                {'uid': 91, 'value': '3', 'color': 'diamonds', 'actions': [3]}
+            ], 
+        'marbles': 
+            [
+                {'mid': 4, 'position': -5, 'color': 'yellow'}, 
+                {'mid': 5, 'position': 19, 'color': 'yellow'}, 
+                {'mid': 6, 'position': -7, 'color': 'yellow'}, 
+                {'mid': 7, 'position': -8, 'color': 'yellow'}
+            ]
+        """
+
+    def test_20_player_2_view_cards(self):
+        # player 1 requests to view his new cards
+        res = client.get(f'v1/games/{self.game_ids[0]}/cards',
+                         json=self.players[2],
+                         )
+
+        assert res.status_code == 200
+        assert len(res.json()['hand']) == 5
+        self.cards[2] = res.json()['hand']
+
+    """ Player 2
+    'hand': 
+        [
+            {'uid': 103, 'value': '2', 'color': 'spades', 'actions': [2]}, 
+            {'uid': 30, 'value': 'Ja', 'color': 'spades', 'actions': ['switch']}, 
+            {'uid': 70, 'value': '6', 'color': 'spades', 'actions': [6]}, 
+            {'uid': 25, 'value': 'Ja', 'color': 'clubs', 'actions': ['switch']}, 
+            {'uid': 90, 'value': '3', 'color': 'diamonds', 'actions': [3]}
+        ], 
+    'marbles': 
+        [
+            {'mid': 8, 'position': -9, 'color': 'green'}, 
+            {'mid': 9, 'position': -10, 'color': 'green'}, 
+            {'mid': 10, 'position': -11, 'color': 'green'}, 
+            {'mid': 11, 'position': -12, 'color': 'green'}
+        ]
+    """
+
+    def test_21_player_3_view_cards(self):
+        # player 1 requests to view his new cards
+        res = client.get(f'v1/games/{self.game_ids[0]}/cards',
+                         json=self.players[3],
+                         )
+
+        assert res.status_code == 200
+        assert len(res.json()['hand']) == 5
+        self.cards[3] = res.json()['hand']
+
+        """ Player 3
+        'hand': 
+            [
+                {'uid': 31, 'value': 'Ja', 'color': 'spades', 'actions': ['switch']}, 
+                {'uid': 64, 'value': '6', 'color': 'clubs', 'actions': [6]}, 
+                {'uid': 61, 'value': '7', 'color': 'hearts', 'actions': [7]},
+                {'uid': 19, 'value': 'Q', 'color': 'diamonds', 'actions': [12]}, 
+                {'uid': 95, 'value': '3', 'color': 'spades', 'actions': [3]}
+            ], 
+        'marbles': 
+            [
+                {'mid': 12, 'position': -13, 'color': 'blue'}, 
+                {'mid': 13, 'position': -14, 'color': 'blue'}, 
+                {'mid': 14, 'position': -15, 'color': 'blue'}, 
+                {'mid': 15, 'position': -16, 'color': 'blue'}
+            ]
+        """
+
+    def test_swap_cards_round_2(self):
+        res = client.post(f'v1/games/{self.game_ids[0]}/swap_cards',
+                          json={
+                              "player": self.players[0],
+                              "card": self.cards[0][0]
+                          }
+                          )
+        print(res.json())
+        assert res.status_code == 200
+
+        for i in range(1, 4):
+            res = client.post(f'v1/games/{self.game_ids[0]}/swap_cards',
+                              json={
+                                  "player": self.players[i],
+                                  "card": self.cards[i][0]
+                              }
+                              )
+            assert res.status_code == 200
+
+        for i in range(4):
+            res = client.get(f'v1/games/{self.game_ids[0]}/cards',
+                             json=self.players[i],
+                             )
+            assert res.status_code == 200
+            self.cards[i] = res.json()["hand"]
+            assert len(self.cards[i]) == 5
