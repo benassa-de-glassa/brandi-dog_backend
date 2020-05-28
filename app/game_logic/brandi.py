@@ -433,6 +433,11 @@ class Brandi():
                 else:
                     pnt = pnt.next
                 # check whether a marble is blocking along the way
+                if pnt is None: 
+                    return {
+                        'requestValid': False,
+                        'note': f'You cannot enter your goal without going to far.'
+                    }
                 if pnt.is_blocking():
                     return {
                         'requestValid': False,
@@ -466,6 +471,11 @@ class Brandi():
             for i in range(abs(action.action)):
                 pnt = pnt.prev
                 # check whether a marble is blocking along the way
+                if pnt is None: 
+                    return {
+                        'requestValid': False,
+                        'note': f'You cannot enter your goal without going to far.'
+                    }
                 if pnt.is_blocking():
                     return {
                         'requestValid': False,
@@ -579,6 +589,11 @@ class Brandi():
                     pnt = pnt.next
             else:
                 pnt = pnt.next
+            if pnt is None: 
+                return {
+                        'requestValid': False,
+                        'note': f'You cannot enter your goal without going to far.'
+                    }
             # check whether a marble is blocking along the way
             if pnt.is_blocking():
                 return {
