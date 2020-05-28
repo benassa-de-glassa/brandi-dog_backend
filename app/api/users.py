@@ -16,6 +16,9 @@ users = {}
 
 @router.post('/player',  response_model=Player)
 def create_new_player(player: PlayerBase):
+    if not player.name:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
+                            detail="That's a dumb name.")
     # test for duplicate name
     if player.name in [user.name for user in users.values()]:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
