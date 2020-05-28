@@ -564,7 +564,7 @@ class Brandi():
                 if the player was to not be able to finish his moves
                 """
                 is_seven_playable = self.check_card_marble_action(
-                    self.players[player.uid], 7, self.players[player.uid].marbles)
+                    self.players[player.uid], 7, self.players[player.uid].marbles.values())
                 if not is_seven_playable:
                     return {
                         'requestValid': False,
