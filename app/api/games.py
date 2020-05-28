@@ -45,6 +45,12 @@ async def sio_emit_player_state(game_id, player_id):
         room=player_id
     )
 
+async def sio_emit_game_list():
+    await sio.emit(
+        'game-list',
+        [game_instance.public_state() for game_instance in games.values()]
+    )
+
 
 @sio.on('join-game')
 async def join_websocket(sid, data):
@@ -77,10 +83,19 @@ def get_list_of_games():
 @router.post('/games', response_model=GamePublic)
 # Body(...) is needed to not have game_name recognized as a query parameter
 # ... is the ellipsis and I have no clue why they decided to (ab)use this notation
-def initialize_new_game(player: Player, game_name: str = Body(...), seed: int = None, debug: bool = False):
+async def initialize_new_game(player: Player, game_name: str = Body(...), seed: int = None, debug: bool = False):
     """
     start a new game
     """
+    # check if the game_name is an empty string
+    if not game_name:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
+                            detail="Please enter a game name.")
+    # check for duplicate name
+    if game_name in [game.game_name for game in games.values()]:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
+                            detail='A game with this name already exists.')
+                            
     game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4))
     while game_id in games:
         # generate new game ids until a new id is found
@@ -89,6 +104,8 @@ def initialize_new_game(player: Player, game_name: str = Body(...), seed: int = 
 
     games[game_id] = Brandi(game_id, game_name=game_name,
                             host=player, seed=seed, debug=debug)
+
+    await sio_emit_game_list()
 
     return games[game_id].public_state()
 
@@ -122,7 +139,9 @@ async def join_game(game_id: str, player: Player):
                             detail=f"Four player have already joined this game, there is no more room.")
 
     games[game_id].player_join(player)
+    
     await sio_emit_game_state(game_id)
+    await sio_emit_game_list()
 
     return games[game_id].public_state()
 
