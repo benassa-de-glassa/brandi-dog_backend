@@ -34,6 +34,10 @@ class Deck():
 
     def deck_size(self):
         return len(self.cards)
+
+    def reshuffle_cards(self, discarded_cards):
+        self.cards = discarded_cards
+        random.shuffle(self.cards)
     """
     Deck State:
 

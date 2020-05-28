@@ -86,6 +86,9 @@ class Brandi():
         # not actually necessary for the game, but nice to look at on the frontend
         self.top_card = None
 
+        self.discarded_cards = []
+
+
     def set_name(self, name):
         self.game_name = name
 
@@ -207,9 +210,13 @@ class Brandi():
                 'requestValid': False,
                 'note': f'The game is not in the correct state to deal cards.'
             }
-        for uid in self.order:
+        for uid in self.order:  
             for _ in range(self.round_cards[self.round_turn % 5]):
+                if self.deck.deck_size() == 0: 
+                    self.deck.reshuffle_cards(self.discarded_cards)
+                    self.discarded_cards = []
                 self.players[uid].set_card(self.deck.give_card())
+
 
         self.round_state = 2
 
@@ -395,6 +402,8 @@ class Brandi():
                 self.increment_active_player_index()
                 self.top_card = self.players[player.uid].hand.play_card(
                     action.card)
+                
+                self.discarded_cards.append(self.top_card)
                 return {
                     'requestValid': True,
                     'note': f'Marble {action.mid} moved to {marble.curr.position}.'
@@ -460,6 +469,7 @@ class Brandi():
             self.increment_active_player_index()
             self.top_card = self.players[player.uid].hand.play_card(
                 action.card)
+            self.discarded_cards.append(self.top_card)
 
             return {
                 'requestValid': True,
@@ -501,6 +511,7 @@ class Brandi():
             self.increment_active_player_index()
             self.top_card = self.players[player.uid].hand.play_card(
                 action.card)
+            self.discarded_cards.append(self.top_card)
 
             return {
                 'requestValid': True,
@@ -549,6 +560,8 @@ class Brandi():
             self.top_card = self.players[player.uid].hand.play_card(
                 action.card)
 
+
+            self.discarded_cards.append(self.top_card)
             return {
                 'requestValid': True, 
                 'note': f'switched {action.mid} and {action.mid_2} successfully'
@@ -644,6 +657,9 @@ class Brandi():
                 self.top_card = self.players[player.uid].hand.play_card(
                     action.card)
                 self.players[player.uid].steps_of_seven_remaining = -1
+
+                self.discarded_cards.append(self.top_card)
+
 
             return {
                 'requestValid': True,
