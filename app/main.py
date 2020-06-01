@@ -8,7 +8,7 @@ import uvicorn
 import socketio
 
 from app.api.socket import sio
-from app.api import games, chats, users
+from app.api import games, chats, users, authentication
 
 origins = [
     "*",
@@ -43,6 +43,8 @@ app.include_router(
     users.router,
     prefix='/v1'
 )
+
+app.include_router(authentication.router)
 
 # create socket.io app
 sio_app = socketio.ASGIApp(socketio_server=sio, other_asgi_app=app)
