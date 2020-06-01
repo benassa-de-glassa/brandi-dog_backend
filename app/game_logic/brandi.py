@@ -360,7 +360,7 @@ class Brandi():
             }
 
         if self.players[self.order[self.active_player_index]].steps_of_seven_remaining != -1 \
-            and 7 not in action.card.action:
+            and 7 not in action.card.action_options:
             return {
                 'requestValid': False,
                 'note': f'Player {player.name} has to finish using his seven moves.'
@@ -568,7 +568,7 @@ class Brandi():
             }
 
         # in case either a joker or a seven is played. all other cases are covered by the options above
-        elif 7 in action.card.action: # assume you want to play a 7 as the other options have been exausted
+        elif 7 in action.card.action_options: # assume you want to play a 7 as the other options have been exausted
             if pnt is None:
                 return {
                     'requestValid': False,
