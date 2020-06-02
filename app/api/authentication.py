@@ -17,28 +17,22 @@ from passlib.context import CryptContext
 
 from sqlalchemy.orm import Session
 
-
 from app.models.player import Player, PlayerBase
 from app.models import user as _user, token as _token
-
 from app.game_logic.user import User
-
 from app.database import crud, db_models
-
 from app.database.database import SessionLocal, engine
 
 # cookie authorization
 from app.api.oauth2withcookies import OAuth2PasswordBearerCookie
 
+from app.config import SECRET_KEY, JWT_ENCODE_ALGORITHM, ACCESS_TOKEN_EXPIRE_DAYS,
+                        COOKIE_DOMAIN
+
 # logger = logging.getLogger('backend')
 
 # define the authentication router that is imported in main
 router = APIRouter()
-
-# much secret stuff for jw tokens
-SECRET_KEY = 'b3fd9a906fc6add6a181e24054450eb53ba6961e7cc32c1f1408c6b882b88f00'
-ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # password context needed to hash and verify passwords
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
@@ -105,11 +99,11 @@ def create_access_token(*, data: dict, expires_delta: timedelta = None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(days=7)
+        expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     to_encode.update({'exp': expire})
 
     # this creates a bytestring, need to decode it to obtain a string
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ENCODE_ALGORITHM)
 
     return encoded_jwt.decode('utf-8')
 
@@ -188,7 +182,8 @@ async def login_for_access_token(
         key='Authorization',
         value=f'Bearer {access_token}',
         path='/',
-        domain='localtest.me',
+        domain=COOKIE_DOMAIN,
+        # domain='localtest.me',
         httponly=True,
         secure=False,
         # samesite='none'
@@ -219,6 +214,7 @@ async def create_user(
     user_in_db = crud.create_user(db, new_user)
 
 
-@router.post('/logout')
-async def logout_user():
-    pass
+@router.get('/logout')
+async def logout_user(response : Response):
+    response.delete_cookie('Authorization', domain='localtest.me')
+    
