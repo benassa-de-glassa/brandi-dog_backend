@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import logging
 
 import jwt  # json web tokens
 
@@ -9,6 +10,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 # from starlette.exceptions import HTTPException
 
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
+from starlette.responses import Response, JSONResponse
 
 # create context to hash and verify passwords
 from passlib.context import CryptContext
@@ -25,6 +27,10 @@ from app.database import crud, db_models
 
 from app.database.database import SessionLocal, engine
 
+# cookie authorization
+from app.api.oauth2withcookies import OAuth2PasswordBearerCookie
+
+# logger = logging.getLogger('backend')
 
 # define the authentication router that is imported in main
 router = APIRouter()
@@ -38,7 +44,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 # O authentification scheme 2 that is injected as a dependency
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/token')
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/token')
+oauth2_scheme = OAuth2PasswordBearerCookie(tokenUrl='/token')
 
 # bind the database models for the table 'users'
 db_models.Base.metadata.create_all(bind=engine)
@@ -47,8 +54,10 @@ db_models.Base.metadata.create_all(bind=engine)
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 def authenticate_user(db, username: str, password: str):
     """
@@ -58,13 +67,14 @@ def authenticate_user(db, username: str, password: str):
     the user if the user exists and was verified
     False, otherwise
     """
-    password 
+    password
     user = get_user(db, username)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
         return False
     return user
+
 
 def get_db():
     """
@@ -76,10 +86,11 @@ def get_db():
     try:
         # need python >3.6 for the yield dependency to work, see the fastapi
         # docs for a backport
-        yield db 
+        yield db
     finally:
         # make sure the database closes even if there was an exception
         db.close()
+
 
 """ 
 Implement the authentication using json web tokens:
@@ -87,6 +98,7 @@ Upon login, the users credentials are verified against the sqlite database
 and if successful, the user obtains a access token that is valid an hour. 
 After an hour he has to log back in. 
 """
+
 
 def create_access_token(*, data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -96,8 +108,15 @@ def create_access_token(*, data: dict, expires_delta: timedelta = None):
         expire = datetime.utcnow() + timedelta(days=7)
     to_encode.update({'exp': expire})
 
+    # this creates a bytestring, need to decode it to obtain a string
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+
+    return encoded_jwt.decode('utf-8')
+
+
+def get_user(db, username: str) -> _user.UserInDB:
+    user = crud.get_user_by_username(db, username)
+    return user
 
 
 async def get_current_user(
@@ -109,6 +128,9 @@ async def get_current_user(
         detail='Could not validate credentials',
         headers={'WWW-Authenticate': 'Bearer'},
     )
+
+    logging.debug(f'Obtained token {token}')
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get('sub')
@@ -116,24 +138,21 @@ async def get_current_user(
             raise credentials_exception
         token_data = _token.TokenData(username=username)
     except jwt.PyJWTError:
+        logging.warn('PyJWTError')
         raise credentials_exception
     user = get_user(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
+# -----------------------------------------------------------------------------
+# Paths:
+
 
 @router.get('/users/me')
 async def read_users_me(current_user: _user.User = Depends(get_current_user)):
+    logging.info('try to get user')
     return current_user
-
-
-def get_user(db, username: str) -> _user.UserInDB:
-    # if username in db:
-    #     user_dict = db[username]
-    #     return schemas.UserInDB(**user_dict)
-    user = crud.get_user_by_username(db, username)
-    return user
 
 
 @router.get('/tokens')
@@ -141,8 +160,14 @@ async def read_tokens(token: str = Depends(oauth2_scheme)):
     return {'token': token}
 
 
+@router.get('/test')
+def test():
+    pass
+
+
 @router.post("/token", response_model=_token.Token)
 async def login_for_access_token(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
@@ -157,11 +182,24 @@ async def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
+
+    # cookies are set automatically by fastapi
+    response.set_cookie(
+        key='Authorization',
+        value=f'Bearer {access_token}',
+        path='/',
+        domain='localtest.me',
+        httponly=True,
+        secure=False,
+        # samesite='none'
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post('/create_user', response_model=_user.User)
-async def create_user(new_user: _user.UserCreate, db: Session = Depends(get_db)):
+async def create_user(
+        new_user: _user.UserCreate,
+        db: Session = Depends(get_db)):
     # user contains username (str) and password (str)
     if not new_user.username:
         raise HTTPException(
@@ -179,3 +217,8 @@ async def create_user(new_user: _user.UserCreate, db: Session = Depends(get_db))
 
     # the user containing the ID generated by the database is returned
     user_in_db = crud.create_user(db, new_user)
+
+
+@router.post('/logout')
+async def logout_user():
+    pass
