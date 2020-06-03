@@ -10,20 +10,11 @@ import socketio
 from app.api.socket import sio
 from app.api import games, chats, users, authentication
 
-# # setup logging
-# logger = logging.getLogger('backend')
-# logfilename = 'backend.log'
-# logger.setLevel(logging.DEBUG)
-# fh = logging.FileHandler(logfilename)
-# fh.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
-# logger.addHandler(fh)
-# logger.info("[{}] Logging started in {}".format(datetime.datetime.now().strftime("%H:%M:%S"), logfilename))
-
-
 # wildcard "*" does not work with credentials so we have to put in the frontend origins??
 origins = [
+    # 'http://localhost',
     'http://localhost:3000',
-    'http://localtest.me:3000'
+    # 'http://localtest.me:3000'
     # "*",
 ]
 
@@ -57,6 +48,7 @@ app.include_router(
     prefix='/v1'
 )
 
+# without prefix for testing purposes
 app.include_router(authentication.router)
 
 # create socket.io app

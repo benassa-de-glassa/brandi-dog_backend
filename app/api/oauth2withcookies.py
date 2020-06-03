@@ -1,4 +1,5 @@
-# from https://medium.com/data-rebels/fastapi-how-to-add-basic-and-cookie-authentication-a45c85ef47d3
+# mostly taken from
+# https://medium.com/data-rebels/fastapi-how-to-add-basic-and-cookie-authentication-a45c85ef47d3
 
 import logging
 from typing import Optional
@@ -13,6 +14,12 @@ from starlette.status import HTTP_403_FORBIDDEN
 
 
 class OAuth2PasswordBearerCookie(OAuth2):
+    """
+    Extends the standard OAuth2PasswordBearer class that only works with 
+    authorization headers with cookie functionality. It tries to obtain 
+    authorization through both headers and cookies and it only fails if neither
+    is present. 
+    """
     def __init__(
         self,
         tokenUrl: str,
@@ -31,6 +38,7 @@ class OAuth2PasswordBearerCookie(OAuth2):
         header_authorization: str = request.headers.get('Authorization')
         cookie_authorization: str = request.cookies.get('Authorization')
 
+        # obtain the token from a utils function
         header_scheme, header_param = get_authorization_scheme_param(
             header_authorization
         )
@@ -40,6 +48,7 @@ class OAuth2PasswordBearerCookie(OAuth2):
         )
 
         if header_scheme.lower() == 'bearer':
+            # a header was detected
             authorization = True
             scheme = header_scheme
             param = header_param
@@ -52,6 +61,7 @@ class OAuth2PasswordBearerCookie(OAuth2):
         else: 
             authorization = False
 
+        # scheme could be basic
         if not authorization or scheme.lower() != 'bearer':
             if self.auto_error:
                 raise HTTPException(
@@ -59,5 +69,7 @@ class OAuth2PasswordBearerCookie(OAuth2):
                 )
             else:
                 return None
+
+        # return the token
         return param
 

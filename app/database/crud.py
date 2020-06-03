@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import db_models
 from app.models import user
 
-from app.api.authentication import get_password_hash
+from app.api.password_context import get_password_hash
 
 def get_user(db: Session, user_id: int):
     return db.query(db_models.User).filter(db_models.User.id == user_id).first()

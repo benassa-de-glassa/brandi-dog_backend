@@ -12,36 +12,26 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from starlette.responses import Response, JSONResponse
 
-# create context to hash and verify passwords
-from passlib.context import CryptContext
-
 from sqlalchemy.orm import Session
-
 
 from app.models.player import Player, PlayerBase
 from app.models import user as _user, token as _token
-
 from app.game_logic.user import User
-
 from app.database import crud, db_models
-
 from app.database.database import SessionLocal, engine
 
 # cookie authorization
 from app.api.oauth2withcookies import OAuth2PasswordBearerCookie
 
+from app.api.password_context import verify_password
+
+from app.config import SECRET_KEY, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_DAYS, \
+                        COOKIE_DOMAIN
+
 # logger = logging.getLogger('backend')
 
 # define the authentication router that is imported in main
 router = APIRouter()
-
-# much secret stuff for jw tokens
-SECRET_KEY = 'b3fd9a906fc6add6a181e24054450eb53ba6961e7cc32c1f1408c6b882b88f00'
-ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
-
-# password context needed to hash and verify passwords
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 # O authentification scheme 2 that is injected as a dependency
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/token')
@@ -49,15 +39,6 @@ oauth2_scheme = OAuth2PasswordBearerCookie(tokenUrl='/token')
 
 # bind the database models for the table 'users'
 db_models.Base.metadata.create_all(bind=engine)
-
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
 
 def authenticate_user(db, username: str, password: str):
     """
@@ -95,23 +76,24 @@ def get_db():
 """ 
 Implement the authentication using json web tokens:
 Upon login, the users credentials are verified against the sqlite database
-and if successful, the user obtains a access token that is valid an hour. 
-After an hour he has to log back in. 
+and if successful, the user obtains a access token that is stored as a 
+httponly cookie. 
 """
 
-
-def create_access_token(*, data: dict, expires_delta: timedelta = None):
+def create_access_token(*, data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(days=7)
+        expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     to_encode.update({'exp': expire})
 
     # this creates a bytestring, need to decode it to obtain a string
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ALGORITHM)
 
-    return encoded_jwt.decode('utf-8')
+    # the jwt is still encoded but now a string instead of a bytestring 
+    encoded_jwt_utf8 = encoded_jwt.decode('utf-8')
+    return encoded_jwt_utf8
 
 
 def get_user(db, username: str) -> _user.UserInDB:
@@ -132,7 +114,7 @@ async def get_current_user(
     logging.debug(f'Obtained token {token}')
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
@@ -148,10 +130,11 @@ async def get_current_user(
 # -----------------------------------------------------------------------------
 # Paths:
 
-
-@router.get('/users/me')
+@router.get('/users/me', response_model=_user.User)
 async def read_users_me(current_user: _user.User = Depends(get_current_user)):
     logging.info('try to get user')
+    # the response model makes sure that only id and name are sent, and not for
+    # example the hashed password
     return current_user
 
 
@@ -178,7 +161,7 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
@@ -188,7 +171,8 @@ async def login_for_access_token(
         key='Authorization',
         value=f'Bearer {access_token}',
         path='/',
-        domain='localtest.me',
+        domain=COOKIE_DOMAIN,
+        # domain='localtest.me',
         httponly=True,
         secure=False,
         # samesite='none'
@@ -219,6 +203,7 @@ async def create_user(
     user_in_db = crud.create_user(db, new_user)
 
 
-@router.post('/logout')
-async def logout_user():
-    pass
+@router.get('/logout')
+async def logout_user(response : Response):
+    response.delete_cookie('Authorization', domain='localtest.me')
+    
