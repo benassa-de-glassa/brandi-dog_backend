@@ -9,7 +9,6 @@ from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from app.models.player import Player, PlayerBase
 from app.game_logic.user import User
 
-
 router = APIRouter()
 
 users = {}
