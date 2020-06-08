@@ -6,3 +6,4 @@ ACCESS_TOKEN_EXPIRE_DAYS = 7
 
 # DEV
 COOKIE_DOMAIN = 'localhost'
+COOKIE_EXPIRES = 604800 # seconds = 1 week

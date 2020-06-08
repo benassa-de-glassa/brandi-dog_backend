@@ -6,16 +6,15 @@ from fastapi import APIRouter
 from starlette.exceptions import HTTPException
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 
-from app.models.player import Player, PlayerBase
+from app.models.user import Player, UserBase
 from app.game_logic.user import User
 
 router = APIRouter()
 
 users = {}
 
-
 @router.post('/player',  response_model=Player)
-def create_new_player(player: PlayerBase):
+def create_new_player(player: UserBase):
     if not player.name:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
                             detail="That's a dumb name.")
@@ -37,5 +36,5 @@ def create_new_player(player: PlayerBase):
 
 
 @router.get('/player', response_model=Player)
-def get_player(player: PlayerBase):
+def get_player(player: UserBase):
     return users[player.uid]

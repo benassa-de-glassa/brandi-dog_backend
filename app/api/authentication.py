@@ -14,8 +14,13 @@ from starlette.responses import Response, JSONResponse
 
 from sqlalchemy.orm import Session
 
-from app.models.player import Player, PlayerBase
-from app.models import user as _user, token as _token
+# from app.models.player import Player, PlayerBase
+# from app.models import user as _user, token as _token
+from app import models
+
+# TODO: ???
+from app.models.token import Token # no idea why this is required ???
+
 from app.game_logic.user import User
 from app.database import crud, db_models
 from app.database.database import SessionLocal, engine
@@ -26,7 +31,7 @@ from app.api.oauth2withcookies import OAuth2PasswordBearerCookie
 from app.api.password_context import verify_password
 
 from app.config import SECRET_KEY, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_DAYS, \
-                        COOKIE_DOMAIN
+    COOKIE_DOMAIN, COOKIE_EXPIRES
 
 # logger = logging.getLogger('backend')
 
@@ -40,6 +45,16 @@ oauth2_scheme = OAuth2PasswordBearerCookie(tokenUrl='/token')
 # bind the database models for the table 'users'
 db_models.Base.metadata.create_all(bind=engine)
 
+# playing users dictionary
+playing_users = {}
+
+credentials_exception = HTTPException(
+    status_code=HTTP_401_UNAUTHORIZED,
+    detail='Could not validate credentials',
+    headers={'WWW-Authenticate': 'Bearer'},
+)
+
+
 def authenticate_user(db, username: str, password: str):
     """
     Tries to get the user from the database and verifies the supplied password
@@ -48,7 +63,6 @@ def authenticate_user(db, username: str, password: str):
     the user if the user exists and was verified
     False, otherwise
     """
-    password
     user = get_user(db, username)
     if not user:
         return False
@@ -80,6 +94,7 @@ and if successful, the user obtains a access token that is stored as a
 httponly cookie. 
 """
 
+
 def create_access_token(*, data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
     if expires_delta:
@@ -91,50 +106,74 @@ def create_access_token(*, data: dict, expires_delta: timedelta = None) -> str:
     # this creates a bytestring, need to decode it to obtain a string
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ALGORITHM)
 
-    # the jwt is still encoded but now a string instead of a bytestring 
+    # the jwt is still encoded but now a string instead of a bytestring
     encoded_jwt_utf8 = encoded_jwt.decode('utf-8')
     return encoded_jwt_utf8
 
 
-def get_user(db, username: str) -> _user.UserInDB:
+def create_game_token(game_id: str) -> str:
+    """
+    Create a game token, that is sent in order to rejoin a game.
+    """
+    to_encode = {'sub': game_id}
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ALGORITHM)
+    encoded_jwt_utf8 = encoded_jwt.decode('utf-8')
+    return encoded_jwt_utf8
+
+
+def get_current_game(token: str) -> str:
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    game_id: str = payload.get('sub')
+    return game_id
+
+
+def get_user(db, username: str) -> models.user.UserInDB:
     user = crud.get_user_by_username(db, username)
-    return user
+
+    # translate from sql orm to pydantic, otherwise there is no dict() method
+    return models.user.UserInDB(
+        uid=user.uid,
+        username=user.username,
+        hashed_password=user.hashed_password
+    )
 
 
 async def get_current_user(
         db: Session = Depends(get_db),
         token: str = Depends(oauth2_scheme)):
-    # predefine the exception
-    credentials_exception = HTTPException(
-        status_code=HTTP_401_UNAUTHORIZED,
-        detail='Could not validate credentials',
-        headers={'WWW-Authenticate': 'Bearer'},
-    )
-
-    logging.debug(f'Obtained token {token}')
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
-        token_data = _token.TokenData(username=username)
+        token_data = models.token.TokenData(username=username)
     except jwt.PyJWTError:
         logging.warn('PyJWTError')
         raise credentials_exception
     user = get_user(db, username=token_data.username)
+
     if user is None:
         raise credentials_exception
     return user
 
+
 # -----------------------------------------------------------------------------
 # Paths:
 
-@router.get('/users/me', response_model=_user.User)
-async def read_users_me(current_user: _user.User = Depends(get_current_user)):
-    logging.info('try to get user')
+
+@router.get('/users/me', response_model=models.user.Player)
+async def read_users_me(current_user: models.user.User = Depends(get_current_user)):
     # the response model makes sure that only id and name are sent, and not for
     # example the hashed password
+
+    if current_user.uid in playing_users:
+        logging.info('Player is currently in game')
+        game_id = playing_users[current_user.uid]
+        token = create_game_token(game_id)
+        return _user.Player(**current_user.dict(),
+                            current_game=game_id,
+                            token=token)
     return current_user
 
 
@@ -143,12 +182,7 @@ async def read_tokens(token: str = Depends(oauth2_scheme)):
     return {'token': token}
 
 
-@router.get('/test')
-def test():
-    pass
-
-
-@router.post("/token", response_model=_token.Token)
+@router.post("/token", response_model=models.token.Token)
 async def login_for_access_token(
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -166,12 +200,13 @@ async def login_for_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
 
-    # cookies are set automatically by fastapi
+    # cookies are set automatically on the response supplied by fastapi
     response.set_cookie(
         key='Authorization',
         value=f'Bearer {access_token}',
         path='/',
         domain=COOKIE_DOMAIN,
+        expires=COOKIE_EXPIRES,
         # domain='localtest.me',
         httponly=True,
         secure=False,
@@ -180,9 +215,9 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post('/create_user', response_model=_user.User)
+@router.post('/create_user', response_model=models.user.User)
 async def create_user(
-        new_user: _user.UserCreate,
+        new_user: models.user.UserCreate,
         db: Session = Depends(get_db)):
     # user contains username (str) and password (str)
     if not new_user.username:
@@ -204,6 +239,5 @@ async def create_user(
 
 
 @router.get('/logout')
-async def logout_user(response : Response):
-    response.delete_cookie('Authorization', domain='localtest.me')
-    
+async def logout_user(response: Response):
+    response.delete_cookie('Authorization', domain=COOKIE_DOMAIN)

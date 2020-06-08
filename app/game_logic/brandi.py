@@ -59,7 +59,7 @@ class Brandi():
     def __init__(self, game_id, host, seed=None, game_name=None, debug=False):
         self.game_id = game_id
         self.game_name = game_name
-        self.host = Player(host.uid, host.name)
+        self.host = Player(host.uid, host.username)
         self.game_state = 0  # start in the initialized state
         self.round_state = 0
 
@@ -90,18 +90,43 @@ class Brandi():
         self.game_name = name
 
     def set_host(self, player):
-        self.host = Player(player.uid, player.name)
+        self.host = Player(player.uid, player.username)
 
     def player_join(self, player: Player):
         # have a player join the game
         if player.uid in self.players:
             return {
                 'requestValid': False,
-                'note': 'Player has already joined the game.'
+                'note': f'Player {player.username} has already joined the game.'
             }
-        self.players[player.uid] = Player(player.uid, player.name)
+        self.players[player.uid] = Player(player.uid, player.username)
         # place new player at the beginning of the list to make testing easier when debugging
         self.order.insert(0, player.uid)
+    
+    def remove_player(self, uid):
+        """
+        remove a player from the game
+        """
+        if not uid in self.players:
+            return {
+                'requestValid': False, 
+                'note': f'Player #{uid} is not in this game.'
+            }
+
+        # TODO add possibility to replace players
+        if self.game_state > 1:
+            return {
+                'requestValid': False, 
+                'note': f'Game is currently in progress.'
+            }
+
+        del self.players[uid]
+        self.order.remove(uid)
+
+        return {'requestValid': True}
+
+        
+        
 
     def change_teams(self, playerlist):
         """
@@ -122,7 +147,7 @@ class Brandi():
             if player.uid not in self.players:
                 return {
                     'requestValid': False,
-                    'note': f'Player {player.name} is not part of this game'
+                    'note': f'Player {player.username} is not part of this game'
                 }
         self.order = [player.uid for player in playerlist]
         return {
@@ -271,14 +296,14 @@ class Brandi():
             self.game_state = 3
             return {
                 'requestValid': True,
-                'note': f'Team 1 of players {self.players[self.order[0]].name} and {self.players[self.order[2]].name} have won.',
+                'note': f'Team 1 of players {self.players[self.order[0]].username} and {self.players[self.order[2]].username} have won.',
                 'gameOver': True
             }
         if team_2_has_won:
             self.game_state = 3
             return {
                 'requestValid': True,
-                'note': f'Team 2 of players {self.players[self.order[1]].name} and {self.players[self.order[3]].name} have won.',
+                'note': f'Team 2 of players {self.players[self.order[1]].username} and {self.players[self.order[3]].username} have won.',
                 'gameOver': True
             }
 
@@ -326,7 +351,7 @@ class Brandi():
             return res
         return {
             'requestValid': True,
-            'note': f'Player {player.name} has folded for this round.'
+            'note': f'Player {player.username} has folded for this round.'
         }
 
     def event_move_marble(self, player, action):
@@ -338,7 +363,7 @@ class Brandi():
         if player.uid != self.order[self.active_player_index]:
             return {
                 'requestValid': False,
-                'note': f'It is not player {player.name}s turn.'
+                'note': f'It is not player {player.username}s turn.'
             }
         if action.card.uid not in self.players[player.uid].hand.cards:
             return {
@@ -355,7 +380,7 @@ class Brandi():
         if self.players[self.order[self.active_player_index]].steps_of_seven_remaining != -1:
             return {
                 'requestValid': False,
-                'note': f'Player {player.name} has to finish using his seven moves.'
+                'note': f'Player {player.username} has to finish using his seven moves.'
             }
 
         marble = self.players[player.uid].marbles[action.mid]

@@ -1,7 +1,8 @@
 import random
 import string
+import logging
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 from starlette.status import HTTP_400_BAD_REQUEST
@@ -12,25 +13,49 @@ from typing import List, Optional
 from app.game_logic.brandi import Brandi
 
 # models
-from app.models.player import Player, PlayerPublic, PlayerPrivate
+# from app.models.player import Player, PlayerPublic, PlayerPrivate
 from app.models.action import Action
 from app.models.card import Card, CardBase
-from app.models.game import GamePublic
+from app.models.game import GameToken, GamePublic
 
 # import the socket instance
-from app.api.socket import sio
+from app.api.socket import sio, socket_connections
+
+# TEST!
+from app.models.user import User, Player, PlayerPublic, PlayerPrivate
+
+# dictionary of uid: game_id
+from app.api.authentication import get_current_user, playing_users, \
+                                   get_current_game, create_game_token
 
 router = APIRouter()
 
+# dictionary of game_id: game instance
 games = {}
 
+# class SocketBrandi(Brandi):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.connected_sockets = []
+
+#     def log_connected_sockets():
+#         logging.info(self.connected_sockets)
 
 """
 socket events
 """
 
+async def emit_error(sid, msg: str):
+    await sio.emit(
+        'error', 
+        {'detail': msg}, 
+        room=sid
+    )
 
 async def sio_emit_game_state(game_id):
+    """
+    Emit the game state to all players in the same game. 
+    """
     await sio.emit(
         'game-state',
         games[game_id].public_state(),
@@ -39,43 +64,93 @@ async def sio_emit_game_state(game_id):
 
 
 async def sio_emit_player_state(game_id, player_id):
+    """
+    Emit the player state to the player only.
+    """
     await sio.emit(
         'player-state',
         games[game_id].players[player_id].private_state(),
-        room=player_id
+        room=socket_connections[player_id]
     )
 
+
 async def sio_emit_game_list():
+    """
+    Emit the list of games to continuosly display in the game viewer. 
+    """
     await sio.emit(
         'game-list',
         [game_instance.public_state() for game_instance in games.values()]
     )
 
 
-@sio.on('join-game')
-async def join_websocket(sid, data):
-    if data["game_id"] not in games:
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
-                            detail="The game you attempt to join does not exist.")
+@sio.event
+async def join_game_socket(sid, data):
+    player_id = data['player']['uid']
+    token = data['token']
 
-    sio.enter_room(sid, data["game_id"])
-    sio.enter_room(sid, data["player"]["uid"])
-    await sio.emit('join-game-success',
-                   {
-                       "response": f"successfully joined game {data['game_id']}"
-                   },
-                   room=data["player"]["uid"])
-    await sio_emit_game_state(data["game_id"])
+    try:
+        game_id = get_current_game(token)
+    except:
+        return await emit_error('Unable to rejoin game.')
+
+    if game_id not in games:
+        return await emit_error('Unable to join game, game does not exist.')
+        
+    if player_id not in games[game_id].players:
+        return await emit_error('Unable to join game socket, player is not in this game.')
+
+    sio.enter_room(sid, game_id)
+    await sio.emit('join-game-success', {
+        'response': f'successfully joined game {data["game_id"]}',
+        'game_id': game_id
+    },
+        room=socket_connections[player_id]
+    )
+    await sio_emit_game_state(game_id)
+
+# @sio.event
+# async def rejoin_game(sid, data):
+#     player_id = data['player']['uid']
+#     token = data['token']
+
+    # try:
+    #     game_id = get_current_game(token)
+    # except:
+    #     return await emit_error('Unable to rejoin game.')
+
+#     sio.enter_room(sid, game_id)
+#     sio.enter_room(sid, data['player']['uid'])
+#     await sio.emit('join-game-success', {
+#         "response": f"successfully joined game {game_id}"
+#     },
+#         room=data["player"]["uid"]
+#     )
+#     await sio_emit_game_state(game_id)
+
+@sio.event
+async def leave_game(sid, data):
+    game_id = data['game_id']
+    player_id = data['player_id']
+
+    logging.info(f'#{player_id} [{sid}] tries to leave the game')
+
+    response = games[game_id].remove_player(player_id)
+
+    if response['requestValid']:
+        await sio.emit('leave_game_success')
+    else:
+        await emit_error(sid, response['note'])
 
 """
 routing
 """
 
-
 @router.get('/games', response_model=List[GamePublic])
 def get_list_of_games():
     """
-    return a list of game keys
+    return a list of game keys, called for example by clicking on the update button. 
+    Should be obsolete after the socket update emitter above. 
     """
     return [game_instance.public_state() for game_instance in games.values()]
 
@@ -83,9 +158,9 @@ def get_list_of_games():
 @router.post('/games', response_model=GamePublic)
 # Body(...) is needed to not have game_name recognized as a query parameter
 # ... is the ellipsis and I have no clue why they decided to (ab)use this notation
-async def initialize_new_game(player: Player, game_name: str = Body(...), seed: int = None, debug: bool = False):
+async def initialize_new_game(player: User, game_name: str = Body(...), seed: int = None, debug: bool = False):
     """
-    start a new game
+    Start a new game.
     """
     # check if the game_name is an empty string
     if not game_name:
@@ -95,7 +170,7 @@ async def initialize_new_game(player: Player, game_name: str = Body(...), seed: 
     if game_name in [game.game_name for game in games.values()]:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
                             detail='A game with this name already exists.')
-                            
+
     game_id = ''.join(random.choice(string.ascii_uppercase) for i in range(4))
     while game_id in games:
         # generate new game ids until a new id is found
@@ -123,27 +198,36 @@ def get_game_state(game_id: str, player: Player):
     return games[game_id].public_state()
 
 
-@router.post('/games/{game_id}/join', response_model=GamePublic)
-async def join_game(game_id: str, player: Player):
+@router.post('/games/{game_id}/join', response_model=GameToken) #response_model=GamePublic)
+async def join_game(game_id: str, user: User = Depends(get_current_user)):
     """
-    join an existing game
+    join an existing game. The user is injected as a dependency from the 
+    required JWT cookie in the request. 
     """
-    if game_id not in games:  # ensure the game exists
+    # ensure the game exists
+    if game_id not in games:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
                             detail=f"Game with game id {game_id} does not exist.")
-    if player.uid in games[game_id].players:  # ensure no player joins twice
+    # ensure no user joins twice
+    if user.uid in games[game_id].players:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
-                            detail=f"Player {player.name} has already joined.")
-    if len(games[game_id].players) == 4:
+                            detail=f"Player {player.username} has already joined.")
+    # ensure only four players can join
+    if len(games[game_id].players) >= 4:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
                             detail=f"Four player have already joined this game, there is no more room.")
 
+    player = Player(**user.dict(), current_game = game_id)
     games[game_id].player_join(player)
-    
-    await sio_emit_game_state(game_id)
+
+    token = create_game_token(game_id)
+
+    # await sio_emit_game_state(game_id)
     await sio_emit_game_list()
 
-    return games[game_id].public_state()
+    # return {'game_state': games[game_id].public_state(), 'game_token': token}
+    # return games[game_id].public_state()
+    return {'game_token': token}
 
 
 @router.post('/games/{game_id}/teams', response_model=GamePublic)
@@ -166,7 +250,7 @@ async def set_teams(game_id: str, player: Player, teams: List[Player]):
 
 
 @router.post('/games/{game_id}/start')
-async def start_game(game_id: str, player: Player):
+async def start_game(game_id: str, player: User):
     """
     start an existing game
     """
@@ -188,7 +272,7 @@ async def start_game(game_id: str, player: Player):
 
 
 @router.get('/games/{game_id}/cards')
-def get_cards(game_id: str, player: Player):
+def get_cards(game_id: str, player: User):
     """
     start an existing game
     """
@@ -219,7 +303,7 @@ async def swap_card(game_id: str, player: Player, card: CardBase):
         for uid in games[game_id].order:
             await sio_emit_player_state(game_id, uid)
         await sio_emit_game_state(game_id)
-        
+
     return res  # do not return cards at this point as the player is not allowed to view them yet
 
 
@@ -265,3 +349,15 @@ async def perform_action(game_id: str, player: Player, action: Action):
             status_code=HTTP_400_BAD_REQUEST, detail=res["note"])
         return
     return games[game_id].public_state()
+
+
+# @router.get('/games/{game_id}/token')
+# async def get_game_token(game_id: str, player: User = Depends(get_current_user)):
+    # pass
+
+
+
+# TODO: 
+# restart_game()
+# end_game()
+# player_leave()

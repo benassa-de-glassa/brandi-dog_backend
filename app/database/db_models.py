@@ -10,13 +10,9 @@ class User(Base):
 
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True, index=True) 
-    #, autoincrement=True)
-
-    # uid used in the game 
-    # uid = Column(Integer, primary_key=True, index=True)
+    uid = Column(Integer, primary_key=True, index=True) 
     
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    current_game = Column(String, default="")
+    # current_game = Column(String, default="")
     

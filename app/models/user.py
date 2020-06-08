@@ -1,6 +1,8 @@
-# database playground
-# from typing import List
 from pydantic import BaseModel
+from typing import List
+
+from app.models.card import Card
+from app.models.marble import Marble
 
 
 class UserBase(BaseModel):
@@ -11,10 +13,7 @@ class UserCreate(UserBase):
     password: str
 
 class User(UserBase):
-    # uid: str
-    id: int
-    # is_active: bool
-    # current_game: str = ''
+    uid: int
 
     class Config:
         orm_mode = True
@@ -22,3 +21,13 @@ class User(UserBase):
 class UserInDB(User):
     hashed_password: str
 
+class Player(User):
+    current_game: str = None
+
+class PlayerPublic(UserBase):
+    # username from UserBase
+    marbles: List[Marble]
+    steps_of_seven: int
+
+class PlayerPrivate(Player):
+    hand: List[Card]

@@ -6,14 +6,14 @@ class Player():
     """
     Player object instance handling the Player
 
-    Player.name stores the Player name
+    Player.username stores the Player username
     Player.ready stores whether the player is ready
     Player.hand is an instance of the Players Hand
     """
 
-    def __init__(self, uid,  name, color=None):
+    def __init__(self, uid,  username, color=None):
         self.uid = uid
-        self.name = name
+        self.username = username
         self.color = color
         self.hand = Hand()
 
@@ -69,7 +69,7 @@ class Player():
     def private_state(self):
         return {
             'uid': self.uid,
-            'name': self.name,
+            'username': self.username,
             'hand': self.hand.to_json(),
             'marbles': [marble.to_json() for marble in self.marbles.values()],
             'steps_of_seven': self.steps_of_seven_remaining
@@ -78,6 +78,6 @@ class Player():
     def to_json(self):
         return {
             'uid': self.uid,
-            'name': self.name,
+            'username': self.username,
             'marbles': [marble.to_json() for marble in self.marbles.values()]
         }
