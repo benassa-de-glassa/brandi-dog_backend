@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from app.models.card import Card
 from app.models.marble import Marble
@@ -23,6 +23,7 @@ class UserInDB(User):
 
 class Player(User):
     current_game: str = None
+    game_token: Optional[str]
 
 class PlayerPublic(UserBase):
     # username from UserBase

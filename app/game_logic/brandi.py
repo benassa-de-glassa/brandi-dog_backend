@@ -383,13 +383,14 @@ class Brandi():
             }
 
         if action.action not in self.players[player.uid].hand.cards[action.card.uid].action_options:
-            return {
-                'requestValid': False,
-                'note': 'Desired action does not match the card.'
-            }
+            if not action.card.value == 7:
+                return {
+                    'requestValid': False,
+                    'note': 'Desired action does not match the card.'
+                }
 
         if self.players[self.order[self.active_player_index]].steps_of_seven_remaining != -1 \
-            and 7 not in action.card.action_options:
+            and 7 not in action.card.action:
             return {
                 'requestValid': False,
                 'note': f'Player {player.username} has to finish using his seven moves.'
@@ -597,7 +598,8 @@ class Brandi():
             }
 
         # in case either a joker or a seven is played. all other cases are covered by the options above
-        elif 7 in action.card.action_options: # assume you want to play a 7 as the other options have been exausted
+            logging.DEBUG(action.card)
+        elif isinstance(action.card.actions, list) and 7 in action.card.actions: # assume you want to play a 7 as the other options have been exausted
             if pnt is None:
                 return {
                     'requestValid': False,
@@ -611,7 +613,7 @@ class Brandi():
                 if the player was to not be able to finish his moves
                 """
                 is_seven_playable = self.check_card_marble_action(
-                    self.players[player.uid], 7, self.players[player.uid].marbles.values())
+                    self.players[player.uid], 7, list(self.players[player.uid].marbles.values()))
                 if not is_seven_playable:
                     return {
                         'requestValid': False,
@@ -711,6 +713,7 @@ class Brandi():
         should be executed on a copy of marbles such that the marble positions are not
         overridden
         """
+        print (marble)
         if action == 0:
             pnt = marble.curr
             if pnt is not None:
