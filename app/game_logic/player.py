@@ -43,12 +43,6 @@ class Player():
         """
         self.hand.set_card(card)
 
-    def choose_action(self, card_id):
-        """
-        return a list of available options given a card
-        """
-        return self.hand.cards[card_id].action_options
-
     def fold(self):
         self.hand.fold()
         self.has_folded = True
