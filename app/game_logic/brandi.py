@@ -56,18 +56,23 @@ class Brandi():
     """
 
     # Initialization - Stage 0
-    def __init__(self, game_id, host, seed=None, game_name=None, debug=False):
+    def __init__(self, game_id, host=None, seed=None, game_name=None, debug=False):
         self.game_id = game_id
         self.game_name = game_name
-        self.host = Player(host.uid, host.username)
+
+        self.players = {}   # initialize a new player list
+        self.order = []     # list of player uids to keep track of the order
+        self.active_player_index = 0  # keep track of whos players turn it is to make a move
+
+        if host:
+            self.set_host(host)
+            self.player_join(self.host) # add the host as the first player
+
         self.game_state = 0  # start in the initialized state
         self.round_state = 0
 
         self.deck = Deck(seed)  # initialize a deck instance
-        self.players = {}  # initialize a new player list
-        self.order = []  # list of player uids to keep track of the order
-        self.active_player_index = 0  # keep track of whos players turn it is to make a move
-
+        
         self.round_cards = [6, 5, 4, 3, 2]  # number of cards dealt at the
         # beginning of each round
         self.round_turn = 0  # count which turn is reached
@@ -83,13 +88,12 @@ class Brandi():
             for player in test_players:
                 self.player_join(Player(player['uid'], player['name']))
 
-        # not actually necessary for the game, but nice to look at on the frontend
         self.top_card = None
 
     def set_name(self, name):
         self.game_name = name
 
-    def set_host(self, player):
+    def set_host(self, player): # player here is the pydantic model
         self.host = Player(player.uid, player.username)
 
     def player_join(self, player: Player):
@@ -242,7 +246,7 @@ class Brandi():
         if not self.round_state == 2:
             return {
                 'requestValid': False,
-                'note': f'The round is not in the game swapping state.'
+                'note': f'The round is not in the card swapping state.'
             }
         if not self.players[player.uid].may_swap_cards:
             return {
@@ -705,6 +709,7 @@ class Brandi():
                 return False
             return True
         elif action == 7:
+            logging.info('marble = ' + str(marble))
             assert isinstance(marble, list)
             total_distance_to_blockade = 0
             for m in marble:  # for all the players marbles check how far they can be moved to the next blocking marble

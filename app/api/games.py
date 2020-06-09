@@ -101,37 +101,21 @@ async def join_game_socket(sid, data):
         return await emit_error('Unable to join game socket, player is not in this game.')
 
     sio.enter_room(sid, game_id)
-    await sio.emit('join-game-success', {
-        'response': f'successfully joined game {data["game_id"]}',
+    await sio.emit('join_game_success', {
+        'response': f'successfully joined game {game_id}',
         'game_id': game_id
     },
         room=socket_connections[player_id]
     )
     await sio_emit_game_state(game_id)
 
-# @sio.event
-# async def rejoin_game(sid, data):
-#     player_id = data['player']['uid']
-#     token = data['token']
-
-    # try:
-    #     game_id = get_current_game(token)
-    # except:
-    #     return await emit_error('Unable to rejoin game.')
-
-#     sio.enter_room(sid, game_id)
-#     sio.enter_room(sid, data['player']['uid'])
-#     await sio.emit('join-game-success', {
-#         "response": f"successfully joined game {game_id}"
-#     },
-#         room=data["player"]["uid"]
-#     )
-#     await sio_emit_game_state(game_id)
 
 @sio.event
 async def leave_game(sid, data):
     game_id = data['game_id']
     player_id = data['player_id']
+
+    sio.leave_room(sid, game_id)
 
     logging.info(f'#{player_id} [{sid}] tries to leave the game')
 
@@ -141,6 +125,14 @@ async def leave_game(sid, data):
         await sio.emit('leave_game_success')
     else:
         await emit_error(sid, response['note'])
+
+    # clear emtpy games
+    if not games[game_id].players:
+        removed_game = games.pop(game_id, None)
+        if not removed_game:
+            logging.warning('Could not delete game')
+        await sio_emit_game_list()
+    
 
 """
 routing
@@ -155,7 +147,7 @@ def get_list_of_games():
     return [game_instance.public_state() for game_instance in games.values()]
 
 
-@router.post('/games', response_model=GamePublic)
+@router.post('/games', response_model=GameToken)
 # Body(...) is needed to not have game_name recognized as a query parameter
 # ... is the ellipsis and I have no clue why they decided to (ab)use this notation
 async def initialize_new_game(player: User, game_name: str = Body(...), seed: int = None, debug: bool = False):
@@ -178,11 +170,13 @@ async def initialize_new_game(player: User, game_name: str = Body(...), seed: in
                           for i in range(4))
 
     games[game_id] = Brandi(game_id, game_name=game_name,
-                            host=player, seed=seed, debug=debug)
+                            host=player, seed=seed, debug=debug)                        
 
     await sio_emit_game_list()
 
-    return games[game_id].public_state()
+    token = create_game_token(game_id)
+
+    return {'game_token' : token}
 
 
 @router.get('/games/{game_id}', response_model=GamePublic)
@@ -211,7 +205,7 @@ async def join_game(game_id: str, user: User = Depends(get_current_user)):
     # ensure no user joins twice
     if user.uid in games[game_id].players:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
-                            detail=f"Player {player.username} has already joined.")
+                            detail=f"Player {user.username} has already joined.")
     # ensure only four players can join
     if len(games[game_id].players) >= 4:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,

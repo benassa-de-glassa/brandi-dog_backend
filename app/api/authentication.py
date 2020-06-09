@@ -129,7 +129,8 @@ def get_current_game(token: str) -> str:
 
 def get_user(db, username: str) -> models.user.UserInDB:
     user = crud.get_user_by_username(db, username)
-
+    if not user:
+        return None
     # translate from sql orm to pydantic, otherwise there is no dict() method
     return models.user.UserInDB(
         uid=user.uid,
@@ -151,6 +152,7 @@ async def get_current_user(
     except jwt.PyJWTError:
         logging.warn('PyJWTError')
         raise credentials_exception
+    
     user = get_user(db, username=token_data.username)
 
     if user is None:
