@@ -33,6 +33,9 @@ from app.api.password_context import verify_password
 from app.config import SECRET_KEY, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_DAYS, \
     COOKIE_DOMAIN, COOKIE_EXPIRES
 
+# playing users dictionary
+from app.api.api_globals import playing_users
+
 # logger = logging.getLogger('backend')
 
 # define the authentication router that is imported in main
@@ -45,8 +48,7 @@ oauth2_scheme = OAuth2PasswordBearerCookie(tokenUrl='/token')
 # bind the database models for the table 'users'
 db_models.Base.metadata.create_all(bind=engine)
 
-# playing users dictionary
-playing_users = {}
+
 
 credentials_exception = HTTPException(
     status_code=HTTP_401_UNAUTHORIZED,
@@ -172,10 +174,10 @@ async def read_users_me(current_user: models.user.User = Depends(get_current_use
     if current_user.uid in playing_users:
         logging.info('Player is currently in game')
         game_id = playing_users[current_user.uid]
-        token = create_game_token(game_id)
-        return _user.Player(**current_user.dict(),
+        game_token = create_game_token(game_id)
+        return models.user.Player(**current_user.dict(),
                             current_game=game_id,
-                            token=token)
+                            game_token=game_token)
     return current_user
 
 

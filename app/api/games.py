@@ -21,12 +21,13 @@ from app.models.game import GameToken, GamePublic
 # import the socket instance
 from app.api.socket import sio, socket_connections
 
-# TEST!
 from app.models.user import User, Player, PlayerPublic, PlayerPrivate
 
-# dictionary of uid: game_id
-from app.api.authentication import get_current_user, playing_users, \
-                                   get_current_game, create_game_token
+from app.api.authentication import get_current_user, get_current_game, \
+    create_game_token
+
+# dictionary { uid: game_id }
+from app.api.api_globals import playing_users
 
 router = APIRouter()
 
@@ -45,12 +46,14 @@ games = {}
 socket events
 """
 
+
 async def emit_error(sid, msg: str):
     await sio.emit(
-        'error', 
-        {'detail': msg}, 
+        'error',
+        {'detail': msg},
         room=sid
     )
+
 
 async def sio_emit_game_state(game_id):
     """
@@ -92,15 +95,16 @@ async def join_game_socket(sid, data):
     try:
         game_id = get_current_game(token)
     except:
-        return await emit_error('Unable to rejoin game.')
+        return await emit_error('Unable to verify game token.')
 
     if game_id not in games:
         return await emit_error('Unable to join game, game does not exist.')
-        
+
     if player_id not in games[game_id].players:
         return await emit_error('Unable to join game socket, player is not in this game.')
 
     sio.enter_room(sid, game_id)
+    playing_users[player_id] = game_id
     await sio.emit('join_game_success', {
         'response': f'successfully joined game {game_id}',
         'game_id': game_id
@@ -122,6 +126,8 @@ async def leave_game(sid, data):
     response = games[game_id].remove_player(player_id)
 
     if response['requestValid']:
+        if not playing_users.pop(player_id, None):
+            logging.error('Unable to remove player from playing users')
         await sio.emit('leave_game_success')
     else:
         await emit_error(sid, response['note'])
@@ -132,7 +138,7 @@ async def leave_game(sid, data):
         if not removed_game:
             logging.warning('Could not delete game')
         await sio_emit_game_list()
-    
+
 
 """
 routing
@@ -170,13 +176,13 @@ async def initialize_new_game(player: User, game_name: str = Body(...), seed: in
                           for i in range(4))
 
     games[game_id] = Brandi(game_id, game_name=game_name,
-                            host=player, seed=seed, debug=debug)                        
+                            host=player, seed=seed, debug=debug)
 
     await sio_emit_game_list()
 
     token = create_game_token(game_id)
 
-    return {'game_token' : token}
+    return {'game_token': token}
 
 
 @router.get('/games/{game_id}', response_model=GamePublic)
@@ -192,7 +198,8 @@ def get_game_state(game_id: str, player: Player):
     return games[game_id].public_state()
 
 
-@router.post('/games/{game_id}/join', response_model=GameToken) #response_model=GamePublic)
+# response_model=GamePublic)
+@router.post('/games/{game_id}/join', response_model=GameToken)
 async def join_game(game_id: str, user: User = Depends(get_current_user)):
     """
     join an existing game. The user is injected as a dependency from the 
@@ -211,7 +218,7 @@ async def join_game(game_id: str, user: User = Depends(get_current_user)):
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
                             detail=f"Four player have already joined this game, there is no more room.")
 
-    player = Player(**user.dict(), current_game = game_id)
+    player = Player(**user.dict(), current_game=game_id)
     games[game_id].player_join(player)
 
     token = create_game_token(game_id)
@@ -345,13 +352,9 @@ async def perform_action(game_id: str, player: Player, action: Action):
     return games[game_id].public_state()
 
 
-# @router.get('/games/{game_id}/token')
-# async def get_game_token(game_id: str, player: User = Depends(get_current_user)):
-    # pass
 
 
-
-# TODO: 
+# TODO:
 # restart_game()
 # end_game()
 # player_leave()
