@@ -90,10 +90,10 @@ async def sio_emit_game_list():
 @sio.event
 async def join_game_socket(sid, data):
     player_id = data['player']['uid']
-    token = data['token']
+    game_token = data['game_token']
 
     try:
-        game_id = get_current_game(token)
+        game_id = get_current_game(game_token)
     except:
         return await emit_error('Unable to verify game token.')
 
