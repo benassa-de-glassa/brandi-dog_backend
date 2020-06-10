@@ -353,14 +353,14 @@ class Brandi():
                 'note': 'You do not have this card.'
             }
 
-        if action.action not in self.players[player.uid].hand.cards[action.card.uid].action_options:
+        if action.card.value not in ['7', 'Jo'] and action.action not in self.players[player.uid].hand.cards[action.card.uid].action_options:
             return {
                 'requestValid': False,
                 'note': 'Desired action does not match the card.'
             }
+            
 
-        if self.players[self.order[self.active_player_index]].steps_of_seven_remaining != -1 \
-            and 7 not in action.card.action_options:
+        if self.players[self.order[self.active_player_index]].steps_of_seven_remaining != -1 and 7 not in action.card.actions:
             return {
                 'requestValid': False,
                 'note': f'Player {player.name} has to finish using his seven moves.'
@@ -409,7 +409,7 @@ class Brandi():
                     'note': f'Marble {action.mid} moved to {marble.curr.position}.'
                 }
         # normal actions
-        elif action.action in [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13]:
+        elif action.action in [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13] and action.card.value not in ['7', 'Jo']:
             # try to move action.action nodes ahead
 
             # use pnt variable to check the path along the action of the marble i.e. whether it
@@ -568,7 +568,7 @@ class Brandi():
             }
 
         # in case either a joker or a seven is played. all other cases are covered by the options above
-        elif 7 in action.card.action_options: # assume you want to play a 7 as the other options have been exausted
+        elif 7 in action.card.actions: # assume you want to play a 7 as the other options have been exausted
             if pnt is None:
                 return {
                     'requestValid': False,
@@ -582,7 +582,7 @@ class Brandi():
                 if the player was to not be able to finish his moves
                 """
                 is_seven_playable = self.check_card_marble_action(
-                    self.players[player.uid], 7, self.players[player.uid].marbles.values())
+                    self.players[player.uid], 7, list(self.players[player.uid].marbles.values()))
                 if not is_seven_playable:
                     return {
                         'requestValid': False,
@@ -591,7 +591,7 @@ class Brandi():
 
                 self.players[player.uid].steps_of_seven_remaining = 7
 
-            elif self.players[player.uid].steps_of_seven_remaining - action.action < 1:
+            elif self.players[player.uid].steps_of_seven_remaining - action.action < 0:
                 '''
                 this is the case when a player wants to take more steps then he has left remaining
                 '''
@@ -722,7 +722,7 @@ class Brandi():
             total_distance_to_blockade = 0
             for m in marble:  # for all the players marbles check how far they can be moved to the next blocking marble
                 pnt = m.curr
-                while not pnt.next.is_blocking():  # move until the current marble m is blocked
+                while pnt is not None and not pnt.next.is_blocking():  # move until the current marble m is blocked
                     pnt = pnt.next
                     # count the steps the marble m can take without being blocked
                     total_distance_to_blockade += 1
