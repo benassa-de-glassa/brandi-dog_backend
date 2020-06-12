@@ -112,6 +112,7 @@ async def join_game_socket(sid, data):
         room=socket_connections[player_id]
     )
     await sio_emit_game_state(game_id)
+    await sio_emit_player_state(game_id, player_id)
 
 
 @sio.event
