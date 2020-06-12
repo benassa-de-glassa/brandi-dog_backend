@@ -395,7 +395,15 @@ class Brandi():
                 'note': f'Player {player.username} has to finish using his seven moves.'
             }
 
-        marble = self.players[player.uid].marbles[action.mid]
+        # previous: raises KeyError if wrong marble is clicked
+        # marble = self.players[player.uid].marbles[action.mid]
+        marble = self.players[player.uid].marbles.get(action.mid, None)
+        if not marble:
+            return {
+                'requestValid': False,
+                'note': 'Marble does not seem to belong to you.'
+            }
+
         if self.players[player.uid].has_finished_marbles():
             team_member = self.order[(self.order.index(
                 player.uid) + PLAYER_COUNT // 2) % PLAYER_COUNT]
