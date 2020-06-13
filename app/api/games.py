@@ -133,12 +133,13 @@ async def leave_game(sid, data):
     else:
         await emit_error(sid, response['note'])
 
-    # clear emtpy games
+    # clear empty games
     if not games[game_id].players:
         removed_game = games.pop(game_id, None)
         if not removed_game:
             logging.warning('Could not delete game')
-        await sio_emit_game_list()
+
+    await sio_emit_game_list()
 
 
 """
@@ -270,7 +271,11 @@ async def start_game(game_id: str, player: User):
         await sio_emit_game_state(game_id)
         for uid in games[game_id].order:
             await sio_emit_player_state(game_id, uid)
+
+        await sio.emit('game_started', {}, room=game_id)
+
     return games[game_id].public_state()
+
 
 
 @router.get('/games/{game_id}/cards')
@@ -332,8 +337,12 @@ async def perform_action(game_id: str, player: Player, action: Action):
     """
 
     """
+    game = games.get(game_id)
 
-    if player.uid not in games[game_id].players:
+    if not game:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
+                            detail=f"Game {game_id} does not exist (anymore).")
+    if player.uid not in game.players:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
                             detail=f"Player {player.uid} not in Game.")
 
