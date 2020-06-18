@@ -95,13 +95,13 @@ async def join_game_socket(sid, data):
     try:
         game_id = get_current_game(game_token)
     except:
-        return await emit_error('Unable to verify game token.')
+        return await emit_error(sid, 'Unable to verify game token.')
 
     if game_id not in games:
-        return await emit_error('Unable to join game, game does not exist.')
+        return await emit_error(sid, 'Unable to join game, game does not exist.')
 
     if player_id not in games[game_id].players:
-        return await emit_error('Unable to join game socket, player is not in this game.')
+        return await emit_error(sid, 'Unable to join game socket, player is not in this game.')
 
     sio.enter_room(sid, game_id)
     playing_users[player_id] = game_id
