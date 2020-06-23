@@ -822,14 +822,14 @@ class TestGame:
                         'color': 'hearts', 
                         'actions': [7]
                         },
-                    "action": 5,
+                    "action": 75,
                     "mid": 12
                 }
             }
             )
 
         assert res.status_code == 200
-        # should be at position 48
+        # should be at position 53
         assert res.json()["players"][self.players[3]["uid"]
                                      ]["marbles"][0]["position"] == 53
 
@@ -844,7 +844,7 @@ class TestGame:
                         'color': 'hearts', 
                         'actions': [7]
                         },
-                    "action": 5,
+                    "action": 73,
                     "mid": 12
                 }
             }
@@ -864,7 +864,7 @@ class TestGame:
                         'color': 'hearts', 
                         'actions': [7]
                         },
-                    "action": 2,
+                    "action": 72,
                     "mid": 12
                 }
             }
@@ -963,19 +963,24 @@ class TestGame:
         ]
         """
 
+
     def test_31_player_0_move_two_in_base(self):
         res = client.post(f'v1/games/{self.game_ids[0]}/action',
             json={
                 "player": self.players[0],
                 "action": {
-                    "card": {'uid': 98, 'value': '2', 'color': 'diamonds', 'actions': [2]},
+                    "card": {
+                        'uid': 98, 
+                        'value': '2', 
+                        'color': 'diamonds',
+                        'actions': [2]
+                        },
                     "action": 2,
                     "mid": 1
                 }
             }
         )
 
-        print(res.content)
         assert res.status_code == 200
         assert res.json()["players"][self.players[0]["uid"]
                                 ]["marbles"][0]["position"] == 1003
