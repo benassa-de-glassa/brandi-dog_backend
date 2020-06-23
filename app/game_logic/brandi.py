@@ -8,6 +8,8 @@ from app.game_logic.field import Field, EntryExitNode
 from app.game_logic.player import Player
 from app.game_logic.marble import Marble
 
+from app.models.user import User
+
 
 NODES_BETWEEN_PLAYERS = 16
 PLAYER_COUNT = 4
@@ -56,18 +58,21 @@ class Brandi():
     """
 
     # Initialization - Stage 0
-    def __init__(self, game_id: str, host: Player, seed=None, game_name: str=None, debug: bool=False):
+    def __init__(self, game_id: str, host: User, seed=None, game_name: str=None, debug: bool=False):
         self.game_id: str = game_id
         self.game_name: str = game_name
-        self.host : Player = Player(host.uid, host.name)
+
+        self.players: Dict[str, Player] = {}  # initialize a new player list
+        self.order: List[Player] = []  # list of player uids to keep track of the order
+
+        # add the host to the game
+        self.host : Player = Player(host.uid, host.username)
         self.player_join(self.host) # add the host as the first player
 
         self.game_state: int = 0  # start in the initialized state
         self.round_state: int = 0
 
         self.deck: Deck = Deck(seed)  # initialize a deck instance
-        self.players: Dict[str, Player] = {}  # initialize a new player list
-        self.order: List[Player] = []  # list of player uids to keep track of the order
         self.active_player_index: int = 0  # keep track of whos players turn it is to make a move
 
         self.round_cards = [6, 5, 4, 3, 2]  # number of cards dealt at the
