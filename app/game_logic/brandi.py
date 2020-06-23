@@ -4,8 +4,8 @@ import logging
 import json
 
 from app.game_logic.deck import Deck
-from app.game_logic.player import Player
 from app.game_logic.field import Field, EntryExitNode
+from app.game_logic.player import Player
 from app.game_logic.marble import Marble
 
 
@@ -56,17 +56,17 @@ class Brandi():
     """
 
     # Initialization - Stage 0
-    def __init__(self, game_id, host, seed=None, game_name=None, debug=False):
-        self.game_id = game_id
-        self.game_name = game_name
-        self.host = Player(host.uid, host.name)
-        self.game_state = 0  # start in the initialized state
-        self.round_state = 0
+    def __init__(self, game_id: str, host: Player, seed=None, game_name: str=None, debug: bool=False):
+        self.game_id: str = game_id
+        self.game_name: str = game_name
+        self.host : Player = Player(host.uid, host.name)
+        self.game_state: int = 0  # start in the initialized state
+        self.round_state: int = 0
 
-        self.deck = Deck(seed)  # initialize a deck instance
-        self.players = {}  # initialize a new player list
-        self.order = []  # list of player uids to keep track of the order
-        self.active_player_index = 0  # keep track of whos players turn it is to make a move
+        self.deck: Deck = Deck(seed)  # initialize a deck instance
+        self.players: Dict[str, Player] = {}  # initialize a new player list
+        self.order: List[Player] = []  # list of player uids to keep track of the order
+        self.active_player_index: int = 0  # keep track of whos players turn it is to make a move
 
         self.round_cards = [6, 5, 4, 3, 2]  # number of cards dealt at the
         # beginning of each round
@@ -190,6 +190,11 @@ class Brandi():
         self.round_state = 1
         self.deal_cards()
         self.round_turn += 1
+
+        """
+        uncomment the following line, so that the correct player starts each round.. testing up to this point has not taken this into account.. and I do not want to rewrite all tests
+        """
+        # self.active_player_index = self.round_count % PLAYER_COUNT
 
         # reset the has folded attribute
         for uid in self.order:
@@ -568,7 +573,8 @@ class Brandi():
             }
 
         # in case either a joker or a seven is played. all other cases are covered by the options above
-        elif 7 in action.card.actions: # assume you want to play a 7 as the other options have been exausted
+        elif action.action in list(range(71, 78)): # assume you want to play a 7 as the other options have been exausted
+            steps = action.action - 70
             if pnt is None:
                 return {
                     'requestValid': False,
@@ -591,17 +597,17 @@ class Brandi():
 
                 self.players[player.uid].steps_of_seven_remaining = 7
 
-            elif self.players[player.uid].steps_of_seven_remaining - action.action < 0:
+            elif self.players[player.uid].steps_of_seven_remaining - steps < 0:
                 '''
                 this is the case when a player wants to take more steps then he has left remaining
                 '''
                 return {
                         'requestValid': False,
-                        'note': f'You attempted to take {action.action} steps, however you only have \
+                        'note': f'You attempted to take {steps} steps, however you only have \
                         {self.players[player.uid].steps_of_seven_remaining} steps left of your seven.'
                     }
             
-            for i in range(action.action):
+            for i in range(steps):
                 # check whether pnt is looking at the own exit node and if it can enter
                 if marble.can_enter_goal and pnt.get_entry_node() == player.uid:
                     flag_home_is_blocking = False
@@ -610,7 +616,7 @@ class Brandi():
                     pnt_copy = pnt_copy.exit
                     # pnt_copy.next = pnt_copy.exit
                     # check the remaining steps in goal for blockage
-                    for _ in range(i, action.action-1): # one less step as the pointer has moved one through pnt_copy.exit
+                    for _ in range(i, steps-1): # one less step as the pointer has moved one through pnt_copy.exit
                         flag_home_is_blocking = pnt_copy.is_blocking()
                         pnt_copy = pnt_copy.next
 
@@ -649,7 +655,7 @@ class Brandi():
             marble.blocking = False + (pnt.position >= 1000) # if the marble position is >= 1000 then the marble is at home and therefore blocking 
             marble.can_enter_goal = True
             marble.set_new_position(pnt)
-            self.players[player.uid].steps_of_seven_remaining -= action.action
+            self.players[player.uid].steps_of_seven_remaining -= steps
 
             if self.players[player.uid].steps_of_seven_remaining == 1:
                 self.increment_active_player_index()

@@ -23,7 +23,7 @@ class Card():
 
     """
 
-    def __init__(self, value, color, uid):
+    def __init__(self, value: str, color: str, uid: int):
         self.uid = uid
         self.value = value
         self.color = color
@@ -43,7 +43,7 @@ class Card():
         if self.value == '8':
             self.action_options = [8]
         if self.value == '7':
-            self.action_options = [7]
+            self.action_options = [*list(range(71, 78))]
         if self.value == '6':
             self.action_options = [6]
         if self.value == '5':
@@ -55,7 +55,7 @@ class Card():
         if self.value == '2':
             self.action_options = [2]
         if self.value == 'Jo':
-            self.action_options = [*list(range(0, 14)), 'switch', -4]
+            self.action_options = [*list(range(0, 7)), *list(range(8, 13)), 'switch', -4, *list(range(71, 78))]
 
     def to_json(self):
         return {
