@@ -13,19 +13,11 @@ class Player():
     Player.hand is an instance of the Players Hand
     """
 
-<<<<<<< HEAD
-    def __init__(self, uid,  username, color=None):
-        self.uid = uid
-        self.username = username
-        self.color = color
-        self.hand = Hand()
-=======
-    def __init__(self, uid: str,  name: str, color: str=None):
+    def __init__(self, uid: str,  username: str, color: str=None):
         self.uid: str = uid
-        self.name: str = name
+        self.username: str = username
         self.color: str = color
         self.hand: Hand = Hand()
->>>>>>> game_logic
 
         #
         self.goal = [0] * 4
