@@ -1,17 +1,18 @@
 import random
+from typing import List
 
 from app.game_logic.card import Card
 
 
 class Deck():
 
-    def __init__(self, seed):
+    def __init__(self, seed: int) -> None:
         if seed:
             random.seed(seed)
 
-        self.N = 0
+        self.N: int = 0
 
-        self.cards = []
+        self.cards: List[Card] = []
 
         values = ['A', 'K', 'Q', 'Ja', '10', '9',
                   '8', '7', '6', '5', '4', '3', '2']
@@ -29,13 +30,13 @@ class Deck():
 
         random.shuffle(self.cards)  # shuffle the deck
 
-    def give_card(self):
+    def give_card(self) -> Card:
         return self.cards.pop(0)
 
-    def deck_size(self):
+    def deck_size(self) -> Card:
         return len(self.cards)
 
-    def reshuffle_cards(self, discarded_cards):
+    def reshuffle_cards(self, discarded_cards: List[Card]) -> None :
         self.cards = discarded_cards
         random.shuffle(self.cards)
     """
