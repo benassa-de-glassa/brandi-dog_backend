@@ -17,22 +17,22 @@ class TestGame():
 
     def test_pre_start_game(self):
         assert self.game.game_state == 0
-        assert self.game.players == {}
+        assert self.game.players[0].username == 'Bene'
+        assert len(self.game.players.values()) == 1
 
     def test_player_join(self):
-        self.game.player_join(self.id1)
         self.game.player_join(self.id2)
         self.game.player_join(self.id3)
         self.game.player_join(self.id4)
 
         assert len(self.game.order) == 4
-        assert self.game.players[1].name == 'Lara'
+        assert self.game.players[1].username == 'Lara'
 
     def test_change_teams(self):
         self.game.change_teams([self.id1, self.id3, self.id2, self.id4])
 
-        assert self.game.players[1].name == 'Lara'
-        assert self.game.players[2].name == 'Thilo'
+        assert self.game.players[1].username == 'Lara'
+        assert self.game.players[2].username == 'Thilo'
         assert self.game.order == [0, 2, 1, 3]
 
     def test_start_game(self):

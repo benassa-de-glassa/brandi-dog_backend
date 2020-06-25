@@ -24,3 +24,7 @@ class GamePublic(GameBase):
 
 class GameToken(BaseModel):
     game_token: str
+
+class GamePrivate(BaseModel):
+    game_token: str
+    game_id: str

@@ -16,7 +16,7 @@ from app.game_logic.brandi import Brandi
 # from app.models.player import Player, PlayerPublic, PlayerPrivate
 from app.models.action import Action
 from app.models.card import Card, CardBase
-from app.models.game import GameToken, GamePublic
+from app.models.game import GameToken, GamePublic, GamePrivate
 
 # import the socket instance
 from app.api.socket import sio, socket_connections
@@ -70,11 +70,13 @@ async def sio_emit_player_state(game_id, player_id):
     """
     Emit the player state to the player only.
     """
-    await sio.emit(
-        'player-state',
-        games[game_id].players[player_id].private_state(),
-        room=socket_connections[player_id]
-    )
+    room = socket_connections.get(player_id)
+    if room is not None:
+        await sio.emit(
+            'player-state',
+            games[game_id].players[player_id].private_state(),
+            room=room
+        )
 
 
 async def sio_emit_game_list():
@@ -146,7 +148,8 @@ async def leave_game(sid, data):
 routing
 """
 
-@router.get('/games', response_model=List[GamePublic])
+
+@router.get('/games', response_model=List[GamePublic], tags=["game maintenance"])
 def get_list_of_games():
     """
     return a list of game keys, called for example by clicking on the update button. 
@@ -155,10 +158,10 @@ def get_list_of_games():
     return [game_instance.public_state() for game_instance in games.values()]
 
 
-@router.post('/games', response_model=GameToken)
+@router.post('/games', response_model=GamePrivate, tags=["game maintenance"])
 # Body(...) is needed to not have game_name recognized as a query parameter
 # ... is the ellipsis and I have no clue why they decided to (ab)use this notation
-async def initialize_new_game(player: User, game_name: str = Body(...), seed: int = None, debug: bool = False):
+async def initialize_new_game(player: User = Depends(get_current_user), game_name: str = Body(...), seed: int = None, debug: bool = False):
     """
     Start a new game.
     """
@@ -184,10 +187,10 @@ async def initialize_new_game(player: User, game_name: str = Body(...), seed: in
 
     token = create_game_token(game_id)
 
-    return {'game_token': token}
+    return {'game_token': token, 'game_id': game_id}
 
 
-@router.get('/games/{game_id}', response_model=GamePublic)
+@router.get('/games/{game_id}', response_model=GamePublic, tags=["game maintenance"])
 def get_game_state(game_id: str, player: Player):
     """
     get the state of a game
@@ -201,7 +204,7 @@ def get_game_state(game_id: str, player: Player):
 
 
 # response_model=GamePublic)
-@router.post('/games/{game_id}/join', response_model=GameToken)
+@router.post('/games/{game_id}/join', response_model=GameToken, tags=["game action"])
 async def join_game(game_id: str, user: User = Depends(get_current_user)):
     """
     join an existing game. The user is injected as a dependency from the 
@@ -233,8 +236,8 @@ async def join_game(game_id: str, user: User = Depends(get_current_user)):
     return {'game_token': token}
 
 
-@router.post('/games/{game_id}/teams', response_model=GamePublic)
-async def set_teams(game_id: str, player: Player, teams: List[Player]):
+@router.post('/games/{game_id}/teams', response_model=GamePublic, tags=["game action"])
+async def set_teams(game_id: str,  teams: List[Player],  player: User = Depends(get_current_user),):
     if player.uid not in games[game_id].players:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
                             detail=f"Player {player.uid} not in Game.")
@@ -252,8 +255,8 @@ async def set_teams(game_id: str, player: Player, teams: List[Player]):
     return games[game_id].public_state()
 
 
-@router.post('/games/{game_id}/start')
-async def start_game(game_id: str, player: User):
+@router.post('/games/{game_id}/start', tags=["game action"])
+async def start_game(game_id: str, player:  User = Depends(get_current_user)):
     """
     start an existing game
     """
@@ -277,9 +280,8 @@ async def start_game(game_id: str, player: User):
     return games[game_id].public_state()
 
 
-
-@router.get('/games/{game_id}/cards')
-def get_cards(game_id: str, player: User):
+@router.get('/games/{game_id}/cards', tags=["game action"])
+def get_cards(game_id: str, player: User = Depends(get_current_user)):
     """
     start an existing game
     """
@@ -292,8 +294,8 @@ def get_cards(game_id: str, player: User):
     return games[game_id].get_cards(player)
 
 
-@router.post('/games/{game_id}/swap_cards')
-async def swap_card(game_id: str, player: Player, card: CardBase):
+@router.post('/games/{game_id}/swap_cards', tags=["game action"])
+async def swap_card(game_id: str,  card: CardBase, player: User = Depends(get_current_user)):
     """
     make the card swap before starting the round
     """
@@ -314,8 +316,8 @@ async def swap_card(game_id: str, player: Player, card: CardBase):
     return res  # do not return cards at this point as the player is not allowed to view them yet
 
 
-@router.post('/games/{game_id}/fold')
-async def fold_round(game_id: str, player: Player):
+@router.post('/games/{game_id}/fold', tags=["game action"])
+async def fold_round(game_id: str, player: User = Depends(get_current_user)):
     """
     make the card swap before starting the round
     """
@@ -332,8 +334,8 @@ async def fold_round(game_id: str, player: Player):
     return games[game_id].get_cards(player)
 
 
-@router.post('/games/{game_id}/action')
-async def perform_action(game_id: str, player: Player, action: Action):
+@router.post('/games/{game_id}/action', tags=["game action"])
+async def perform_action(game_id: str, action: Action, player: User = Depends(get_current_user)):
     """
 
     """
@@ -360,8 +362,6 @@ async def perform_action(game_id: str, player: Player, action: Action):
             status_code=HTTP_400_BAD_REQUEST, detail=res["note"])
         return
     return games[game_id].public_state()
-
-
 
 
 # TODO:

@@ -13,7 +13,7 @@ router = APIRouter()
 
 users = {}
 
-@router.post('/player',  response_model=Player)
+@router.post('/player',  response_model=Player, tags=["player info"])
 def create_new_player(player: UserBase):
     if not player.name:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
@@ -35,6 +35,6 @@ def create_new_player(player: UserBase):
     return users[player_id].to_json()
 
 
-@router.get('/player', response_model=Player)
+@router.get('/player', response_model=Player, tags=["player info"])
 def get_player(player: UserBase):
     return users[player.uid]
