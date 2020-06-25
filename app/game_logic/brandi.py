@@ -684,7 +684,7 @@ class Brandi():
             marble.set_new_position(pnt)
             self.players[player.uid].steps_of_seven_remaining -= steps
 
-            if self.players[player.uid].steps_of_seven_remaining == 1:
+            if self.players[player.uid].steps_of_seven_remaining == 0:
                 self.increment_active_player_index()
 
                 self.top_card = self.players[player.uid].hand.play_card(
