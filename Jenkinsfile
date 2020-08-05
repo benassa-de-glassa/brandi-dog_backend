@@ -4,12 +4,18 @@ pipeline {
     stage('setup') {
       parallel {
         stage('setup') {
+          agent {
+            docker {
+              image 'python:latest'
+            }
+
+          }
           steps {
-            echo 'test'
+            echo 'Setup'
           }
         }
 
-        stage('') {
+        stage('error') {
           steps {
             echo 'test 2'
           }
