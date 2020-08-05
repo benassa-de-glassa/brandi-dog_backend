@@ -1,26 +1,20 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'python:latest'
+    }
+
+  }
   stages {
     stage('setup') {
-      parallel {
-        stage('setup') {
-          agent {
-            docker {
-              image 'python:latest'
-            }
-
-          }
-          steps {
-            echo 'Setup'
-          }
+      agent {
+        docker {
+          image 'python:latest'
         }
 
-        stage('error') {
-          steps {
-            echo 'test 2'
-          }
-        }
-
+      }
+      steps {
+        echo 'Setup'
       }
     }
 
