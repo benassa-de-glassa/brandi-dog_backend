@@ -8,10 +8,12 @@ import uvicorn
 import socketio
 
 from app.api.socket import sio
-from app.api import games, chats, users
+from app.api import games, chats, users, authentication
 
+# wildcard "*" does not work with credentials so we have to put in the frontend origins??
 origins = [
-    "*",
+    'http://localhost:3000',
+    # "*",
 ]
 
 app = FastAPI(
@@ -44,8 +46,8 @@ app.include_router(
     prefix='/v1'
 )
 
+# without prefix for testing purposes
+app.include_router(authentication.router)
+
 # create socket.io app
 sio_app = socketio.ASGIApp(socketio_server=sio, other_asgi_app=app)
-
-if __name__ == "__main__":
-    uvicorn.run(sio_app, host="0.0.0.0", port=8000, debug=True)

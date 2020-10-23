@@ -5,11 +5,11 @@ class User():
     """
 
     def __init__(self, name, uid):
-        self.name = name
+        self.username = name
         self.uid = uid
 
     def to_json(self):
         return {
             'uid': self.uid,
-            'name': self.name
+            'username': self.name
         }
