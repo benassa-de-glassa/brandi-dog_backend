@@ -70,7 +70,7 @@ async def sio_emit_player_state(game_id, player_id):
     """
     Emit the player state to the player only.
     """
-    room = socket_connections.get(player_id)
+    room = socket_connections.get(int(player_id))
     if room is not None:
         await sio.emit(
             'player-state',
