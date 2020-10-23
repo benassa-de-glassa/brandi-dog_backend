@@ -107,11 +107,12 @@ async def join_game_socket(sid, data):
 
     sio.enter_room(sid, game_id)
     playing_users[player_id] = game_id
+
     await sio.emit('join_game_success', {
         'response': f'successfully joined game {game_id}',
         'game_id': game_id
     },
-        room=socket_connections[player_id]
+        room=socket_connections[int(player_id)]
     )
     await sio_emit_game_state(game_id)
     await sio_emit_player_state(game_id, player_id)
