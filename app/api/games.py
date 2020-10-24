@@ -306,7 +306,7 @@ async def swap_card(game_id: str,  card: CardBase, player: User = Depends(get_cu
 
     if card.uid not in games[game_id].players[player.uid].hand.cards:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
-                            detail=f"Card {card.uid} not in {player.name}'s hand.")
+                            detail=f"Card {card.uid} not in {player.username}'s hand.")
 
     res = games[game_id].swap_card(player, card)
     if res["requestValid"] and res["taskFinished"]:
@@ -351,7 +351,7 @@ async def perform_action(game_id: str, action: Action, player: User = Depends(ge
 
     if action.card.uid not in games[game_id].players[player.uid].hand.cards:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST,
-                            detail=f"Card {action.card.uid} not in {player.name}'s hand.")
+                            detail=f"Card {action.card.uid} not in {player.username}'s hand.")
 
     res = games[game_id].event_move_marble(player, action)
 

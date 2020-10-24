@@ -990,7 +990,7 @@ class TestRequests:
             == 1003
         )
 
-    def test_35_player_1_tries_to_move_12_but_is_blocked(self):
+    def test_35_player_1_tries_to_move_10_but_is_blocked(self):
         res = self.clients[1].post(
             f"v1/games/{self.game_ids[0]}/action",
             json={
@@ -1124,4 +1124,473 @@ class TestRequests:
         assert (
             res.json()["players"][self.players[3]["uid"]]["marbles"][1]["position"]
             == 57
+        )
+
+    def test_40_player_0_folds(self):
+        # player 0 has to fold
+        res = self.clients[0].post(f"v1/games/{self.game_ids[0]}/fold")
+        assert res.json()["hand"] == []
+
+    def test_41_player_1_moves_10(self):
+        res = self.clients[1].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {
+                    "uid": 35,
+                    "value": "10",
+                    "color": "diamonds",
+                    "actions": [10],
+                },
+                "action": 10,
+                "mid": 5,
+            },
+        )
+
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[1]["uid"]]["marbles"][1]["position"]
+            == 37
+        )
+
+    def test_42_player_2_moves_12(self):
+        """
+        player 2 first needs to move out of his base
+        """
+        res = self.clients[2].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 18, "value": "Q", "color": "diamonds", "actions": [12]},
+                "action": 12,
+                "mid": 8,
+            },
+        )
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[2]["uid"]]["marbles"][0]["position"]
+            == 51
+        )
+
+    def test_43_player_3_moves_out_of_base(self):
+        """
+        player 3 moves out of base
+        """
+        res = self.clients[3].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {
+                    "uid": 6,
+                    "value": "A",
+                    "color": "spades",
+                    "actions": [0, 1, 11],
+                },
+                "action": 0,
+                "mid": 14,
+            },
+        )
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[3]["uid"]]["marbles"][2]["position"]
+            == 48
+        )
+
+    def test_44_player_1_moves_9(self):
+        res = self.clients[1].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 45, "value": "9", "color": "hearts", "actions": [9]},
+                "action": 9,
+                "mid": 5,
+            },
+        )
+
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[1]["uid"]]["marbles"][1]["position"]
+            == 46
+        )
+
+    def test_45_player_2_moves_12(self):
+        """
+        player 2 first needs to move out of his base
+        """
+        res = self.clients[2].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 46, "value": "9", "color": "spades", "actions": [9]},
+                "action": 9,
+                "mid": 8,
+            },
+        )
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[2]["uid"]]["marbles"][0]["position"]
+            == 60
+        )
+
+    def test_46_player_3_moves_9(self):
+        """
+        player 3 moves 9
+        """
+        res = self.clients[3].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 47, "value": "9", "color": "spades", "actions": [9]},
+                "action": 9,
+                "mid": 13,
+            },
+        )
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[3]["uid"]]["marbles"][1]["position"] == 2
+        )
+
+    def test_47_player_3_folds(self):
+        # player 3 folds
+        res = self.clients[3].post(
+            f"v1/games/{self.game_ids[0]}/fold",
+        )
+
+        assert res.status_code == 200
+
+    def test_48_view_all_player_cards(self):
+        for i in range(4):
+            res = self.clients[i].get(f"v1/games/{self.game_ids[0]}/cards")
+            assert res.status_code == 200
+            self.cards[i] = res.json()["hand"]
+            assert len(self.cards[i]) == 3
+
+    """
+    0:[
+        {'uid': 65, 'value': '6', 'color': 'clubs', 'actions': [6]}, 
+        {'uid': 53, 'value': '8', 'color': 'hearts', 'actions': [8]}, 
+        {'uid': 96, 'value': '2', 'color': 'clubs', 'actions': [2]}
+    ]
+
+    1:[
+        {'uid': 81, 'value': '4', 'color': 'clubs', 'actions': [-4, 4]}, 
+        {'uid': 37, 'value': '10', 'color': 'hearts', 'actions': [10]}, 
+        {'uid': 58, 'value': '7', 'color': 'diamonds', 'actions': [71, 72, 73, 74, 75, 76, 77]}
+    ]
+
+    2: [
+        {'uid': 108, 'value': 'Jo', 'color': 'Jo', 'actions': [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 'switch', -4, 71, 72, 73, 74, 75, 76, 77]}, 
+        {'uid': 79, 'value': '5', 'color': 'spades', 'actions': [5]}, 
+        {'uid': 44, 'value': '9', 'color': 'hearts', 'actions': [9]}
+    ]
+
+    3: [
+        {'uid': 86, 'value': '4', 'color': 'spades', 'actions': [-4, 4]}, 
+        {'uid': 107, 'value': 'Jo', 'color': 'Jo', 'actions': [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 'switch', -4, 71, 72, 73, 74, 75, 76, 77]}, 
+        {'uid': 56, 'value': '7', 'color': 'clubs', 'actions': [71, 72, 73, 74, 75, 76, 77]}
+    ]
+    """
+
+    def test_49_swap_cards_round_3(self):
+        res = self.clients[0].post(
+            f"v1/games/{self.game_ids[0]}/swap_cards", json=self.cards[0][0]
+        )
+        assert res.status_code == 200
+
+        res = self.clients[1].post(
+            f"v1/games/{self.game_ids[0]}/swap_cards", json=self.cards[1][0]
+        )
+        assert res.status_code == 200
+
+        res = self.clients[2].post(
+            f"v1/games/{self.game_ids[0]}/swap_cards", json=self.cards[2][0]
+        )
+        assert res.status_code == 200
+
+        res = self.clients[3].post(
+            f"v1/games/{self.game_ids[0]}/swap_cards", json=self.cards[3][0]
+        )
+        assert res.status_code == 200
+
+        for i in range(4):
+            res = self.clients[i].get(f"v1/games/{self.game_ids[0]}/cards")
+            assert res.status_code == 200
+            self.cards[i] = res.json()["hand"]
+            assert len(self.cards[i]) == 3
+
+    """
+    0:[
+        {'uid': 108, 'value': 'Jo', 'color': 'Jo', 'actions': [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 'switch', -4, 71, 72, 73, 74, 75, 76, 77]}, 
+        {'uid': 53, 'value': '8', 'color': 'hearts', 'actions': [8]}, 
+        {'uid': 96, 'value': '2', 'color': 'clubs', 'actions': [2]}
+    ]
+
+    1:[
+        {'uid': 86, 'value': '4', 'color': 'spades', 'actions': [-4, 4]}, 
+        {'uid': 37, 'value': '10', 'color': 'hearts', 'actions': [10]}, 
+        {'uid': 58, 'value': '7', 'color': 'diamonds', 'actions': [71, 72, 73, 74, 75, 76, 77]}
+    ]
+
+    2: [
+        {'uid': 65, 'value': '6', 'color': 'clubs', 'actions': [6]}, 
+        {'uid': 79, 'value': '5', 'color': 'spades', 'actions': [5]}, 
+        {'uid': 44, 'value': '9', 'color': 'hearts', 'actions': [9]}
+    ]
+
+    3: [
+        {'uid': 81, 'value': '4', 'color': 'clubs', 'actions': [-4, 4]}, 
+        {'uid': 107, 'value': 'Jo', 'color': 'Jo', 'actions': [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 'switch', -4, 71, 72, 73, 74, 75, 76, 77]}, 
+        {'uid': 56, 'value': '7', 'color': 'clubs', 'actions': [71, 72, 73, 74, 75, 76, 77]}
+    ]
+    """
+
+    def test_50_player_1_moves_minus_4(self):
+        res = self.clients[1].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {
+                    "uid": 86,
+                    "value": "4",
+                    "color": "spades",
+                    "actions": [-4, 4],
+                },
+                "action": -4,
+                "mid": 5,
+            },
+        )
+
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[1]["uid"]]["marbles"][1]["position"]
+            == 42
+        )
+
+    def test_51_player_2_moves_5(self):
+        """
+        player 2 first needs to move out of his base
+        """
+        res = self.clients[2].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 79, "value": "5", "color": "spades", "actions": [5]},
+                "action": 5,
+                "mid": 8,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[2]["uid"]]["marbles"][0]["position"] == 1
+        )
+
+    def test_52_player_3_moves_minus_4(self):
+        """
+        player 3 moves 9
+        """
+        res = self.clients[3].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 81, "value": "4", "color": "clubs", "actions": [-4, 4]},
+                "action": -4,
+                "mid": 14,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[3]["uid"]]["marbles"][2]["position"]
+            == 44
+        )
+
+    def test_53_player_0_moves_out(self):
+        res = self.clients[0].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {
+                    "uid": 108,
+                    "value": "Jo",
+                    "color": "Jo",
+                    "actions": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        8,
+                        9,
+                        10,
+                        11,
+                        12,
+                        "switch",
+                        -4,
+                        71,
+                        72,
+                        73,
+                        74,
+                        75,
+                        76,
+                        77,
+                    ],
+                },
+                "action": 0,
+                "mid": 0,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[0]["uid"]]["marbles"][0]["position"] == 0
+        )
+
+    def test_54_player_1_moves_10(self):
+        res = self.clients[1].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 37, "value": "10", "color": "hearts", "actions": [10]},
+                "action": 10,
+                "mid": 5,
+            },
+        )
+
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[1]["uid"]]["marbles"][1]["position"]
+            == 52
+        )
+
+    def test_55_player_2_moves_9(self):
+        """
+        player 2 first needs to move out of his base
+        """
+        res = self.clients[2].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 44, "value": "9", "color": "hearts", "actions": [9]},
+                "action": 9,
+                "mid": 8,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[2]["uid"]]["marbles"][0]["position"]
+            == 10
+        )
+        # assert False
+
+    def test_56_player_3_moves_4_with_7(self):
+
+        res = self.clients[3].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {
+                    "uid": 56,
+                    "value": "7",
+                    "color": "clubs",
+                    "actions": [71, 72, 73, 74, 75, 76, 77],
+                },
+                "action": 74,
+                "mid": 14,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[3]["uid"]]["marbles"][2]["position"]
+            == 48
+        )
+        # assert False
+
+    def test_57_player_3_moves_3_with_7(self):
+
+        res = self.clients[3].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {
+                    "uid": 56,
+                    "value": "7",
+                    "color": "clubs",
+                    "actions": [71, 72, 73, 74, 75, 76, 77],
+                },
+                "action": 73,
+                "mid": 13,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[3]["uid"]]["marbles"][1]["position"] == 5
+        )
+
+    def test_58_player_0_moves_out(self):
+        res = self.clients[0].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 53, "value": "8", "color": "hearts", "actions": [8]},
+                "action": 8,
+                "mid": 0,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[0]["uid"]]["marbles"][0]["position"] == 8
+        )
+
+    def test_59_player_1_moves_7(self):
+        res = self.clients[1].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {
+                    "uid": 58,
+                    "value": "7",
+                    "color": "diamonds",
+                    "actions": [71, 72, 73, 74, 75, 76, 77],
+                },
+                "action": 77,
+                "mid": 5,
+            },
+        )
+
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[1]["uid"]]["marbles"][1]["position"]
+            == 59
+        )
+
+        assert (
+            res.json()["players"][self.players[3]["uid"]]["marbles"][0]["position"]
+            == -13
+        )
+
+    def test_60_player_2_moves_6(self):
+        res = self.clients[2].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {"uid": 65, "value": "6", "color": "clubs", "actions": [6]},
+                "action": 6,
+                "mid": 8,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[2]["uid"]]["marbles"][0]["position"]
+            == 16
+        )
+
+    def test_61_player_3_moves_4_with_Jo(self):
+
+        res = self.clients[3].post(
+            f"v1/games/{self.game_ids[0]}/action",
+            json={
+                "card": {'uid': 107, 'value': 'Jo', 'color': 'Jo', 'actions': [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 'switch', -4, 71, 72, 73, 74, 75, 76, 77]},
+                "action": 4,
+                "mid": 14,
+            },
+        )
+        print(res.json())
+        assert res.status_code == 200
+        assert (
+            res.json()["players"][self.players[3]["uid"]]["marbles"][2]["position"]
+            == 48
         )
