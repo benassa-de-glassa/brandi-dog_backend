@@ -86,6 +86,7 @@ class Field():
                 exit_nodes[j].next = exit_nodes[j+1]
                 # both directions point to the next, so that one can easily enter with a -4 but not exit
                 exit_nodes[j].prev = exit_nodes[j+1]
+                exit_nodes[j].exit = exit_nodes[j+1]
 
             for _ in range(NODES_BETWEEN_PLAYERS - 1):
                 new_node = GameNode(len(nodes))

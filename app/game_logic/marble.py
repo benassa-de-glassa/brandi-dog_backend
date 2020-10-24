@@ -37,6 +37,7 @@ class Marble():
         self.curr = node.curr
         self.prev = node.prev
         self.next = node.next
+        self.exit = node.exit
 
         node.marble = self
 
