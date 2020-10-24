@@ -10,3 +10,4 @@ class Action(BaseModel):
     mid: int
     mid_2: Optional[int]
     pid_2: Optional[str]
+    go_past_base: Optional[bool]

@@ -391,16 +391,19 @@ class Brandi():
 
         # previous: raises KeyError if wrong marble is clicked
         marble = self.players[player.uid].marbles.get(action.mid, None)
+        
+        if self.players[player.uid].has_finished_marbles():
+            team_member = self.order[(self.order.index(
+                player.uid) + PLAYER_COUNT // 2) % PLAYER_COUNT]
+            marble = self.players[team_member].marbles[action.mid]
+
         if not marble:
             return {
                 'requestValid': False,
                 'note': 'Marble does not seem to belong to you.'
             }
 
-        if self.players[player.uid].has_finished_marbles():
-            team_member = self.order[(self.order.index(
-                player.uid) + PLAYER_COUNT // 2) % PLAYER_COUNT]
-            marble = self.players[team_member].marbles[action.mid]
+
         pnt = marble.curr
 
         #  get out of the start
@@ -564,11 +567,6 @@ class Brandi():
                     'requestValid': False,
                     'note': f'You can not swap two of your own marbles.'
                 }
-            '''if action.pid_2 is None:  # make sure a playerid was submitted
-                return {
-                    'requestValid': False,
-                    'note': f'No player to switch was selected.'
-                }'''
 
             marble_1_node = self.players[player.uid].marbles[action.mid].curr
             marble_2_node = self.players[action.pid_2].marbles[action.mid_2].curr
